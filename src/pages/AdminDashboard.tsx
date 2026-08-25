@@ -15,7 +15,7 @@ export const AdminDashboard: React.FC = () => {
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
-            BrandBridge AI Platform Admin Portal
+            Distribution Bridge AI Platform Admin Portal
           </h1>
           <p className="text-xs text-slate-400 mt-1">
             Manage user onboarding, verify brand registry credentials, review 3PL logistics hubs, and track system MRR.

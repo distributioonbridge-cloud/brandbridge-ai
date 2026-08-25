@@ -43,7 +43,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
       <div className="bg-slate-900/90 border-b border-slate-800/50 py-1.5 px-4 sm:px-8 text-xs flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-slate-400">
           <span className="inline-block w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
-          <span className="font-mono text-[11px] uppercase tracking-wider text-slate-300">BrandBridge AI v2.4 Engine</span>
+          <span className="font-mono text-[11px] uppercase tracking-wider text-slate-300">Distribution Bridge v2.4 Engine</span>
           <span className="hidden md:inline text-slate-600">|</span>
           <span className="hidden md:inline text-slate-400">24/7 Agentic ASIN Protection active across Amazon US & EU</span>
         </div>
@@ -102,7 +102,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
           <div>
             <div className="flex items-center gap-1.5">
               <span className="font-extrabold text-xl tracking-tight text-white font-sans">
-                Brand<span className="gradient-text">Bridge</span>
+                Distribution<span className="gradient-text">Bridge</span>
               </span>
               <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
                 AI

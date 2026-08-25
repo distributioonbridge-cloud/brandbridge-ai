@@ -69,7 +69,7 @@ export const LegalCaseModal: React.FC = () => {
         {/* Formatted Generated Notice Preview */}
         <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5 font-mono text-xs text-slate-300 leading-relaxed space-y-4 shadow-inner mb-6">
           <div className="flex items-center justify-between border-b border-slate-800 pb-2 text-[11px] text-slate-500">
-            <span>BRANDBRIDGE AI LEGAL AUTOMATION ENGINE</span>
+            <span>DISTRIBUTION BRIDGE AI LEGAL AUTOMATION ENGINE</span>
             <span>DATE: {activeLegalCase.detectedAt}</span>
           </div>
 
@@ -84,7 +84,7 @@ export const LegalCaseModal: React.FC = () => {
 
           <p>
             Dear Merchant Management,<br />
-            This notice is formally transmitted via BrandBridge AI Enforcement Protocol on behalf of the registered trademark & brand rights holder. Our continuous 24/7 scanning algorithms have recorded unauthorized listing activity and price undercutting on the following product:
+            This notice is formally transmitted via Distribution Bridge AI Enforcement Protocol on behalf of the registered trademark & brand rights holder. Our continuous 24/7 scanning algorithms have recorded unauthorized listing activity and price undercutting on the following product:
           </p>
 
           <div className="bg-slate-900 p-3 rounded border border-slate-800 space-y-1">

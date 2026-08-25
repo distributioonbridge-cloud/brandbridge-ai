@@ -11,7 +11,7 @@ export const Footer: React.FC = () => {
               <ShieldAlert className="w-5 h-5" />
             </div>
             <span className="font-extrabold text-lg text-white">
-              Brand<span className="gradient-text">Bridge</span> AI
+              Distribution<span className="gradient-text">Bridge</span> AI
             </span>
           </div>
           <p className="text-xs text-slate-400 leading-relaxed">
@@ -58,7 +58,7 @@ export const Footer: React.FC = () => {
       </div>
 
       <div className="max-w-7xl mx-auto border-t border-slate-800/60 mt-10 pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-4">
-        <p>© 2026 BrandBridge AI Inc. All rights reserved.</p>
+        <p>© 2026 Distribution Bridge AI Inc. All rights reserved.</p>
         <div className="flex items-center gap-6">
           <span className="hover:text-slate-400 cursor-pointer">Privacy Policy</span>
           <span className="hover:text-slate-400 cursor-pointer">Terms of Service</span>

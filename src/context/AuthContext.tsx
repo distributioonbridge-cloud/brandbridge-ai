@@ -66,9 +66,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser({
         id: 'usr_admin_999',
         name: 'Enterprise Administrator',
-        email: 'admin@brandbridge.ai',
+        email: 'admin@distributionbridge.ai',
         role: 'Admin',
-        companyName: 'BrandBridge Platform Governance',
+        companyName: 'Distribution Bridge Platform Governance',
         verified: true,
         avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
         plan: 'Enterprise'

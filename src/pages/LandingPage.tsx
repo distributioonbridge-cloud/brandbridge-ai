@@ -46,7 +46,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ setActiveTab }) => {
           </h1>
 
           <p className="max-w-3xl mx-auto text-base sm:text-xl text-slate-300 leading-relaxed font-light">
-            BrandBridge AI protects Amazon Brand Registry assets with continuous 24/7 Agentic MAP monitoring while directly connecting verified wholesale distributors to exclusive brand partnerships.
+            Distribution Bridge AI protects Amazon Brand Registry assets with continuous 24/7 Agentic MAP monitoring while directly connecting verified wholesale distributors to exclusive brand partnerships.
           </p>
 
           {/* Action CTAs */}
@@ -195,7 +195,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ setActiveTab }) => {
                 Generate Amazon Legal C&D Cases in <span className="gradient-text">60 Seconds</span>
               </h2>
               <p className="text-slate-300 text-sm leading-relaxed">
-                When an unauthorized seller drops prices below MAP or hijacks your buybox, BrandBridge AI's agentic model compiles the evidence and drafts formal Amazon Brand Registry complaints automatically.
+                When an unauthorized seller drops prices below MAP or hijacks your buybox, Distribution Bridge AI's agentic model compiles the evidence and drafts formal Amazon Brand Registry complaints automatically.
               </p>
               <button
                 onClick={() => {
