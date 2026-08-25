@@ -8,8 +8,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "deploy": "wrangler pages deploy dist",
-    "preview:cf": "wrangler pages dev dist"
+    "deploy": "npx wrangler pages deploy dist",
+    "preview:cf": "npx wrangler pages dev dist"
   },
   "dependencies": {
     "@types/react": "^18.3.3",
