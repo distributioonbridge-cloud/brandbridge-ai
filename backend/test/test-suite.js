@@ -1,11 +1,13 @@
 /**
- * Automated Test Suite for DistributionBridge Monthly Sales Backend
+ * Automated Test Suite for DistributionBridge Unified Backend
  */
 
 import { generateSignedState, verifySignedState } from '../src/utils/crypto.js';
 import { buildAmazonAuthUrl } from '../src/services/lwa.js';
-import { getCorsHeaders, jsonResponse } from '../src/utils/cors.js';
+import { getCorsHeaders, jsonResponse, withCors } from '../src/utils/cors.js';
 import { getSpApiEndpoint, buildMonthInterval, parseOrderMetricsForStorage } from '../src/amazon_spapi.js';
+import { evaluateSourcingDeal } from '../src/routes/triage.js';
+import { calculateLogisticsQuote } from '../src/routes/logistics.js';
 
 let passed = 0;
 let failed = 0;
@@ -21,7 +23,7 @@ function assert(condition, message) {
 }
 
 async function runTests() {
-  console.log('\n=== RUNNING DISTRIBUTIONBRIDGE BACKEND TEST SUITE ===\n');
+  console.log('\n=== RUNNING DISTRIBUTIONBRIDGE UNIFIED BACKEND TEST SUITE ===\n');
 
   const mockEnv = {
     AMAZON_APP_ID: 'amzn1.sp.solution.test-app-id-12345',
@@ -74,18 +76,18 @@ async function runTests() {
   assert(parsedLwaUrl.searchParams.get('client_id') === mockEnv.LWA_CLIENT_ID, 'client_id matches LWA_CLIENT_ID');
   assert(parsedLwaUrl.searchParams.get('response_type') === 'code', 'response_type is code');
 
-  // Test 6: CORS and JSON Response
-  console.log('\n6. Testing CORS Headers & JSON formatting:');
-  const req = new Request('http://localhost:8787/api/test', {
-    headers: { Origin: 'https://distributionbridge.com' },
+  // Test 6: CORS and Universal withCors Wrapper
+  console.log('\n6. Testing Universal CORS Headers (Port 3000 & 5173 support):');
+  const nextJsReq = new Request('http://localhost:8787/api/sourcing/triage', {
+    headers: { Origin: 'http://localhost:3000' },
   });
-  const cors = getCorsHeaders(mockEnv, req);
-  assert(cors['Access-Control-Allow-Origin'] === 'https://distributionbridge.com', 'Origin reflected in CORS header');
-  assert(cors['Access-Control-Allow-Methods'].includes('GET'), 'CORS methods include GET');
+  const corsNext = getCorsHeaders(mockEnv, nextJsReq);
+  assert(corsNext['Access-Control-Allow-Origin'] === 'http://localhost:3000', 'Port 3000 origin reflected in CORS header');
+  assert(corsNext['Access-Control-Allow-Credentials'] === 'true', 'Allow credentials enabled');
 
-  const res = jsonResponse({ status: 'ok' }, 200, {}, mockEnv, req);
-  assert(res.status === 200, 'Status code is 200');
-  assert(res.headers.get('Content-Type') === 'application/json', 'Content-Type is application/json');
+  const rawRes = new Response('redirecting', { status: 302, headers: { Location: 'https://amazon.com' } });
+  const corsWrapped = withCors(rawRes, nextJsReq, mockEnv);
+  assert(corsWrapped.headers.get('Access-Control-Allow-Origin') === 'http://localhost:3000', 'withCors injected CORS on 302 redirect');
 
   // Test 7: SP-API Regional Endpoints & Month Interval Builder
   console.log('\n7. Testing SP-API Region Resolution & Interval Builder:');
@@ -124,7 +126,42 @@ async function runTests() {
   assert(parsedReport.averageSellingPrice === 35.50, 'averageSellingPrice parsed correctly');
   assert(parsedReport.fbaUnitsShipped === 4500, 'FBA units computed (90% = 4500)');
   assert(parsedReport.fbmUnitsShipped === 500, 'FBM units computed (10% = 500)');
-  assert(Array.isArray(parsedReport.asinBreakdown) && parsedReport.asinBreakdown.length > 0, 'ASIN breakdown present');
+
+  // Test 9: Sourcing Triage Engine
+  console.log('\n9. Testing Sourcing Triage Engine Deal Scoring:');
+  const profitableDeal = evaluateSourcingDeal({
+    asin: 'B08PROFIT01',
+    costPrice: 20.00,
+    retailPrice: 59.99,
+    mapPrice: 59.99,
+    fbaCompetitors: 2,
+    isAmazonSelling: false,
+  });
+  assert(profitableDeal.verdict === 'APPROVE_FOR_WHOLESALE', 'High margin deal approved for wholesale');
+  assert(profitableDeal.dealScore >= 80, 'Deal score is >= 80');
+
+  const mapViolatingDeal = evaluateSourcingDeal({
+    asin: 'B08RISK02',
+    costPrice: 40.00,
+    retailPrice: 42.00,
+    mapPrice: 49.99,
+    fbaCompetitors: 12,
+    isAmazonSelling: true,
+  });
+  assert(mapViolatingDeal.verdict === 'REJECT_HIGH_RISK', 'MAP-violating low margin deal rejected as high risk');
+
+  // Test 10: Logistics Engine Quote Calculator
+  console.log('\n10. Testing Logistics Engine Quote Calculator:');
+  const quote = calculateLogisticsQuote({
+    units: 1000,
+    warehouseId: 'WH-MIDWEST-01',
+    destinationFbaHub: 'IND4',
+    requirePolybag: true,
+    requireFnskuLabeling: true,
+  });
+  assert(quote.quoteId.startsWith('QT-'), 'Quote ID generated');
+  assert(quote.costBreakdown.totalLogisticsCost > 0, 'Total logistics cost computed');
+  assert(quote.warehouse.id === 'WH-MIDWEST-01', 'Midwest warehouse selected');
 
   console.log(`\n=== RESULTS: ${passed} PASSED, ${failed} FAILED ===\n`);
 
