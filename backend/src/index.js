@@ -17,6 +17,7 @@ import { handleGetMonthlySales, handleSyncMonthlySales } from './routes/sales.js
 import { handleSourcingTriage } from './routes/triage.js';
 import { handleLogistics } from './routes/logistics.js';
 import { handlePortal } from './routes/portal.js';
+import { handleLogin } from './routes/login.js';
 import { syncAllActiveSellersMonthlySales } from './amazon_spapi.js';
 import { handleOptions, jsonResponse, withCors } from './utils/cors.js';
 
@@ -89,7 +90,14 @@ export default {
       }
 
       // -----------------------------------------------------------------------
-      // 5. Amazon SP-API & LWA OAuth Routes (/api/auth/amazon)
+      // 5. User Authentication & Login (/api/auth/login)
+      // -----------------------------------------------------------------------
+      else if (path === '/api/auth/login' && method === 'POST') {
+        response = await handleLogin(request, env);
+      }
+
+      // -----------------------------------------------------------------------
+      // 6. Amazon SP-API & LWA OAuth Routes (/api/auth/amazon)
       // -----------------------------------------------------------------------
       else if (path === '/api/auth/amazon' && method === 'GET') {
         const userId = url.searchParams.get('user_id') || null;

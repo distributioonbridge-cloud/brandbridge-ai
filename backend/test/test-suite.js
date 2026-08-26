@@ -1,5 +1,5 @@
 /**
- * Automated Test Suite for DistributionBridge Unified Backend & RLS Security
+ * Automated Test Suite for DistributionBridge Unified Backend, RLS Security & Login
  */
 
 import { generateSignedState, verifySignedState } from '../src/utils/crypto.js';
@@ -9,6 +9,8 @@ import { getSpApiEndpoint, buildMonthInterval, parseOrderMetricsForStorage } fro
 import { evaluateSourcingDeal } from '../src/routes/triage.js';
 import { calculateLogisticsQuote } from '../src/routes/logistics.js';
 import { handlePortal } from '../src/routes/portal.js';
+import { hashPassword, verifyPassword, serializeAuthToken, deserializeAuthToken } from '../src/login.js';
+import { handleLogin } from '../src/routes/login.js';
 
 let passed = 0;
 let failed = 0;
@@ -24,7 +26,7 @@ function assert(condition, message) {
 }
 
 async function runTests() {
-  console.log('\n=== RUNNING DISTRIBUTIONBRIDGE UNIFIED BACKEND & RLS TEST SUITE ===\n');
+  console.log('\n=== RUNNING DISTRIBUTIONBRIDGE UNIFIED BACKEND & LOGIN TEST SUITE ===\n');
 
   const mockEnv = {
     AMAZON_APP_ID: 'amzn1.sp.solution.test-app-id-12345',
@@ -176,6 +178,46 @@ async function runTests() {
   assert(rlsData.rlsSessionActive === true, 'RLS session is active in transaction wrapper');
   assert(rlsData.sessionParam.includes('app.current_investor_id'), 'Transaction sets app.current_investor_id');
   assert(rlsData.portfolio && rlsData.portfolio.portfolio_status === 'healthy', 'Isolated investor portfolio returned');
+
+  // Test 12: Password Hashing & Login Router Execution
+  console.log('\n12. Testing Secure Login Router & Token Serialization:');
+  const testPlainPassword = 'EnterpriseSecret2026!';
+  const passwordHash = await hashPassword(testPlainPassword);
+  assert(passwordHash.includes('$') && passwordHash.length > 50, 'PBKDF2 salted hash string generated');
+
+  const isCorrect = await verifyPassword(testPlainPassword, passwordHash);
+  assert(isCorrect === true, 'Valid password successfully verified against PBKDF2 hash');
+
+  const isWrong = await verifyPassword('WrongPassword123', passwordHash);
+  assert(isWrong === false, 'Invalid password correctly rejected');
+
+  const sessionToken = await serializeAuthToken({ userId: 'u-123', email: 'test@distributionbridge.com', role: 'investor' }, mockEnv.CSRF_SECRET, 3600);
+  assert(typeof sessionToken === 'string' && sessionToken.includes('.'), 'Session token serialized and signed');
+
+  const deserialized = await deserializeAuthToken(sessionToken, mockEnv.CSRF_SECRET);
+  assert(deserialized.valid === true && deserialized.payload.userId === 'u-123', 'Session token deserialized and verified');
+
+  // Test POST /api/auth/login with valid demo credentials
+  const loginReq = new Request('http://localhost:8787/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: 'http://localhost:3000' },
+    body: JSON.stringify({ email: 'alpha.capital@distributionbridge.com', password: 'password123' }),
+  });
+  const loginRes = await handleLogin(loginReq, mockEnv);
+  assert(loginRes.status === 200, 'POST /api/auth/login returns HTTP 200 OK');
+  const loginData = await loginRes.json();
+  assert(loginData.success === true, 'Login response indicates success');
+  assert(Boolean(loginData.token), 'Response contains signed session token');
+  assert(loginData.user.role === 'investor', 'User role correctly mapped to investor');
+
+  // Test POST /api/auth/login with invalid password
+  const badLoginReq = new Request('http://localhost:8787/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: 'http://localhost:3000' },
+    body: JSON.stringify({ email: 'alpha.capital@distributionbridge.com', password: 'incorrect-pass' }),
+  });
+  const badLoginRes = await handleLogin(badLoginReq, mockEnv);
+  assert(badLoginRes.status === 401, 'Invalid password returns HTTP 401 Unauthorized');
 
   console.log(`\n=== RESULTS: ${passed} PASSED, ${failed} FAILED ===\n`);
 
