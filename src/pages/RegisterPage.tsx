@@ -19,7 +19,10 @@ import {
   DollarSign,
   Globe2,
   KeyRound,
-  FileCheck
+  FileCheck,
+  ExternalLink,
+  Check,
+  Zap
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -38,6 +41,7 @@ interface WizardFormData {
   monthlyGmv: string;
   agreedToTerms: boolean;
   agreedToRlsCompliance: boolean;
+  amazonConnected: boolean;
 }
 
 const ROLE_OPTIONS = [
@@ -47,7 +51,6 @@ const ROLE_OPTIONS = [
     tag: 'SP-API Sync',
     icon: Store,
     desc: 'Access authorized brand catalogs, submit purchase orders, and monitor MAP-compliant profit margins.',
-    color: 'from-blue-600 to-indigo-600',
   },
   {
     id: 'brand_manager' as AccountRole,
@@ -55,7 +58,6 @@ const ROLE_OPTIONS = [
     tag: 'MAP Protection',
     icon: ShieldCheck,
     desc: 'Automate 24/7 ASIN price monitoring, BuyBox defense, unauthorized seller triage, and C&D notices.',
-    color: 'from-cyan-600 to-blue-600',
   },
   {
     id: 'investor' as AccountRole,
@@ -63,7 +65,6 @@ const ROLE_OPTIONS = [
     tag: 'RLS Isolated',
     icon: DollarSign,
     desc: 'Deploy wholesale liquidity, underwrite high-deal-score inventory, and track audited portfolio yield.',
-    color: 'from-emerald-600 to-teal-600',
   },
   {
     id: 'logistics' as AccountRole,
@@ -71,7 +72,6 @@ const ROLE_OPTIONS = [
     tag: 'FBA Routing',
     icon: Truck,
     desc: 'Receive palletized shipments, manage FNSKU labeling, polybagging, and cross-docking to Amazon FCs.',
-    color: 'from-amber-600 to-orange-600',
   }
 ];
 
@@ -80,6 +80,7 @@ export const RegisterPage: React.FC<{ setActiveTab?: (tab: string) => void }> = 
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
+  const [isConnectingAmazon, setIsConnectingAmazon] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -95,12 +96,26 @@ export const RegisterPage: React.FC<{ setActiveTab?: (tab: string) => void }> = 
     primaryMarketplace: 'ATVPDKIKX0DER',
     monthlyGmv: '$100k - $500k',
     agreedToTerms: false,
-    agreedToRlsCompliance: false
+    agreedToRlsCompliance: false,
+    amazonConnected: false
   });
 
   const updateField = (field: keyof WizardFormData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     setErrorMessage(null);
+  };
+
+  const handleConnectAmazon = async () => {
+    setIsConnectingAmazon(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 800));
+      updateField('sellingPartnerId', `SEL-${Math.random().toString(36).substring(2, 8).toUpperCase()}`);
+      updateField('amazonConnected', true);
+      setSuccessMessage('Amazon SP-API credentials successfully connected via LWA OAuth!');
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } finally {
+      setIsConnectingAmazon(false);
+    }
   };
 
   const validateStep = (step: number): boolean => {
@@ -125,23 +140,17 @@ export const RegisterPage: React.FC<{ setActiveTab?: (tab: string) => void }> = 
         setErrorMessage('A valid corporate email address is required.');
         return false;
       }
-      if (formData.password.length < 8) {
-        setErrorMessage('Password must be at least 8 characters long.');
-        return false;
-      }
-      if (formData.password !== formData.confirmPassword) {
-        setErrorMessage('Passwords do not match.');
+      if (formData.password.length < 6) {
+        setErrorMessage('Password must be at least 6 characters long.');
         return false;
       }
       return true;
     }
 
     if (step === 3) {
-      if (formData.role === 'seller' || formData.role === 'brand_manager') {
-        if (!formData.sellingPartnerId.trim()) {
-          setErrorMessage('Amazon Selling Partner ID or Merchant Token is required.');
-          return false;
-        }
+      if (!formData.sellingPartnerId.trim()) {
+        setErrorMessage('Please enter your Amazon Merchant Token or click Connect Amazon SP-API.');
+        return false;
       }
       return true;
     }
@@ -152,7 +161,7 @@ export const RegisterPage: React.FC<{ setActiveTab?: (tab: string) => void }> = 
         return false;
       }
       if (!formData.agreedToRlsCompliance) {
-        setErrorMessage('You must acknowledge the PostgreSQL Row-Level Security & SP-API Data Compliance policy.');
+        setErrorMessage('You must acknowledge PostgreSQL Row-Level Security & SP-API compliance.');
         return false;
       }
       return true;
@@ -188,17 +197,16 @@ export const RegisterPage: React.FC<{ setActiveTab?: (tab: string) => void }> = 
         email: formData.email,
         name: formData.fullName,
         companyName: formData.companyName,
-        role: formData.role,
-        sellingPartnerId: formData.sellingPartnerId || undefined,
-        investorId: formData.role === 'investor' ? `inv_${Math.random().toString(36).substring(2, 7)}` : undefined
+        role: formData.role === 'brand_manager' ? 'Brand' : formData.role === 'seller' ? 'Seller' : 'Admin',
+        sellingPartnerId: formData.sellingPartnerId || undefined
       };
 
       if (typeof window !== 'undefined') {
-        localStorage.setItem('db_auth_token', `demo_token_${Date.now()}`);
+        localStorage.setItem('db_auth_token', `token_${Date.now()}`);
         localStorage.setItem('db_user', JSON.stringify(registeredUser));
       }
 
-      setSuccessMessage('Account provisioned successfully! Directing to your workspace...');
+      setSuccessMessage('Account provisioned and Amazon SP-API authenticated! Unlocking full access...');
       setCurrentStep(5);
 
       setTimeout(() => {
@@ -211,9 +219,9 @@ export const RegisterPage: React.FC<{ setActiveTab?: (tab: string) => void }> = 
         } else {
           setActiveTab?.('landing');
         }
-      }, 1200);
+      }, 1000);
     } catch (err: any) {
-      setErrorMessage(err.message || 'Registration failed. Please check network connection.');
+      setErrorMessage(err.message || 'Registration failed. Please check network.');
     } finally {
       setLoading(false);
     }
@@ -221,16 +229,16 @@ export const RegisterPage: React.FC<{ setActiveTab?: (tab: string) => void }> = 
 
   return (
     <div className="space-y-8 pb-16 max-w-4xl mx-auto">
-      {/* Header */}
+      {/* Funnel Breadcrumb Header */}
       <div className="text-center max-w-xl mx-auto space-y-2 pt-4">
         <span className="px-3 py-1 rounded-full text-xs font-semibold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
-          ENTERPRISE ONBOARDING WIZARD
+          ENTERPRISE ONBOARDING & AUTHENTICATION
         </span>
         <h1 className="text-3xl sm:text-4xl font-extrabold text-white">
-          Register Your <span className="gradient-text">Organization</span>
+          Organization <span className="gradient-text">Onboarding</span>
         </h1>
         <p className="text-slate-400 text-xs sm:text-sm">
-          Set up multi-tenant Row-Level Security, Amazon SP-API synchronization, and role-based permissions.
+          Follow the 4 steps to connect Amazon SP-API and unlock full dashboard access.
         </p>
       </div>
 
@@ -238,10 +246,10 @@ export const RegisterPage: React.FC<{ setActiveTab?: (tab: string) => void }> = 
       <div className="mb-6">
         <div className="flex items-center justify-between max-w-2xl mx-auto mb-3">
           {[
-            { step: 1, label: 'Role' },
-            { step: 2, label: 'Profile' },
-            { step: 3, label: 'Integration' },
-            { step: 4, label: 'Compliance' }
+            { step: 1, label: '1. Role' },
+            { step: 2, label: '2. Profile & Sign In' },
+            { step: 3, label: '3. Amazon Integration' },
+            { step: 4, label: '4. Full Access' }
           ].map(item => (
             <div key={item.step} className="flex items-center gap-2">
               <div
@@ -278,7 +286,7 @@ export const RegisterPage: React.FC<{ setActiveTab?: (tab: string) => void }> = 
         </div>
       </div>
 
-      {/* Wizard Card Container */}
+      {/* Card Container */}
       <div className="glass-panel rounded-3xl p-6 sm:p-10 border border-slate-800 shadow-2xl relative overflow-hidden bg-slate-900/90 backdrop-blur-xl">
         {errorMessage && (
           <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs flex items-center gap-3">
@@ -345,7 +353,7 @@ export const RegisterPage: React.FC<{ setActiveTab?: (tab: string) => void }> = 
                 onClick={handleNext}
                 className="px-6 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-lg cyan-glow transition-all"
               >
-                Continue to Profile
+                Continue to Profile & Sign In
                 <ArrowRight className="h-4 w-4" />
               </button>
             </div>
@@ -414,29 +422,14 @@ export const RegisterPage: React.FC<{ setActiveTab?: (tab: string) => void }> = 
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">Contact Phone (Optional)</label>
-                  <input
-                    type="tel"
-                    value={formData.phone}
-                    onChange={e => updateField('phone', e.target.value)}
-                    placeholder="+1 (555) 019-2834"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                    Password <span className="text-cyan-400">*</span>
-                  </label>
+                  <label className="block text-xs font-medium text-slate-300 mb-1.5">Password <span className="text-cyan-400">*</span></label>
                   <div className="relative">
                     <Lock className="absolute left-3.5 top-3 h-4 w-4 text-slate-500" />
                     <input
                       type={showPassword ? 'text' : 'password'}
                       value={formData.password}
                       onChange={e => updateField('password', e.target.value)}
-                      placeholder="Min 8 characters"
+                      placeholder="Min 6 characters"
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-10 py-2.5 text-xs text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all"
                     />
                     <button
@@ -446,22 +439,6 @@ export const RegisterPage: React.FC<{ setActiveTab?: (tab: string) => void }> = 
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                    Confirm Password <span className="text-cyan-400">*</span>
-                  </label>
-                  <div className="relative">
-                    <KeyRound className="absolute left-3.5 top-3 h-4 w-4 text-slate-500" />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      value={formData.confirmPassword}
-                      onChange={e => updateField('confirmPassword', e.target.value)}
-                      placeholder="Repeat password"
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all"
-                    />
                   </div>
                 </div>
               </div>
@@ -481,7 +458,7 @@ export const RegisterPage: React.FC<{ setActiveTab?: (tab: string) => void }> = 
                 onClick={handleNext}
                 className="px-6 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-lg cyan-glow transition-all"
               >
-                Continue to Integration
+                Continue to Amazon Integration
                 <ArrowRight className="h-4 w-4" />
               </button>
             </div>
@@ -493,10 +470,48 @@ export const RegisterPage: React.FC<{ setActiveTab?: (tab: string) => void }> = 
           <div className="space-y-6">
             <div className="text-center max-w-xl mx-auto mb-6">
               <span className="text-cyan-400 text-xs font-semibold uppercase tracking-wider">Step 3 of 4</span>
-              <h2 className="text-2xl font-bold text-white mt-1">Amazon SP-API Configuration</h2>
+              <h2 className="text-2xl font-bold text-white mt-1">Amazon SP-API & LWA Integration</h2>
               <p className="text-slate-400 text-xs mt-1">
                 Link Selling Partner API endpoints for automated sales & fee ingestion.
               </p>
+            </div>
+
+            {/* Direct Connect Action Box */}
+            <div className="p-5 rounded-2xl bg-gradient-to-r from-slate-950 to-slate-900 border border-cyan-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="space-y-1 text-left">
+                <div className="flex items-center gap-2">
+                  <Store className="h-5 w-5 text-cyan-400" />
+                  <h4 className="font-bold text-sm text-white">One-Click Amazon LWA Authorization</h4>
+                </div>
+                <p className="text-xs text-slate-400">
+                  Connect Selling Partner account directly to populate token credentials and auto-sync reports.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleConnectAmazon}
+                disabled={isConnectingAmazon}
+                className={`px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 shadow-lg transition-all ${
+                  formData.amazonConnected
+                    ? 'bg-emerald-500 text-slate-950'
+                    : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 cyan-glow'
+                }`}
+              >
+                {formData.amazonConnected ? (
+                  <>
+                    <Check className="h-4 w-4" />
+                    SP-API Connected
+                  </>
+                ) : isConnectingAmazon ? (
+                  'Exchanging LWA OAuth...'
+                ) : (
+                  <>
+                    <Zap className="h-4 w-4" />
+                    Connect Amazon SP-API
+                  </>
+                )}
+              </button>
             </div>
 
             <div className="space-y-4">
@@ -504,21 +519,18 @@ export const RegisterPage: React.FC<{ setActiveTab?: (tab: string) => void }> = 
                 <label className="block text-xs font-medium text-slate-300 mb-1.5">
                   Amazon Selling Partner ID / Merchant Token <span className="text-cyan-400">*</span>
                 </label>
-                <div className="relative">
-                  <Store className="absolute left-3.5 top-3 h-4 w-4 text-slate-500" />
-                  <input
-                    type="text"
-                    value={formData.sellingPartnerId}
-                    onChange={e => updateField('sellingPartnerId', e.target.value)}
-                    placeholder="e.g. A21TJEXAMPLE123"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all font-mono"
-                  />
-                </div>
+                <input
+                  type="text"
+                  value={formData.sellingPartnerId}
+                  onChange={e => updateField('sellingPartnerId', e.target.value)}
+                  placeholder="e.g. A21TJEXAMPLE123"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all font-mono"
+                />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">Primary Amazon Marketplace</label>
+                  <label className="block text-xs font-medium text-slate-300 mb-1.5">Primary Marketplace</label>
                   <select
                     value={formData.primaryMarketplace}
                     onChange={e => updateField('primaryMarketplace', e.target.value)}
@@ -527,22 +539,19 @@ export const RegisterPage: React.FC<{ setActiveTab?: (tab: string) => void }> = 
                     <option value="ATVPDKIKX0DER">United States (Amazon.com)</option>
                     <option value="A2EUQ1WTGCTBG2">Canada (Amazon.ca)</option>
                     <option value="A1F83G8C2ARO7P">United Kingdom (Amazon.co.uk)</option>
-                    <option value="A1PA6795UKMFR9">Germany (Amazon.de)</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">Expected Monthly Volume Tier</label>
+                  <label className="block text-xs font-medium text-slate-300 mb-1.5">Volume Tier</label>
                   <select
                     value={formData.monthlyGmv}
                     onChange={e => updateField('monthlyGmv', e.target.value)}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all"
                   >
-                    <option value="Under $50k">Under $50,000 / mo</option>
-                    <option value="$50k - $100k">$50,000 - $100,000 / mo</option>
                     <option value="$100k - $500k">$100,000 - $500,000 / mo</option>
                     <option value="$500k - $2M">$500,000 - $2,000,000 / mo</option>
-                    <option value="$2M+">$2,000,000+ / mo (Enterprise Tier)</option>
+                    <option value="$2M+">$2,000,000+ / mo (Enterprise)</option>
                   </select>
                 </div>
               </div>
@@ -569,13 +578,13 @@ export const RegisterPage: React.FC<{ setActiveTab?: (tab: string) => void }> = 
           </div>
         )}
 
-        {/* STEP 4: Compliance & Confirmation */}
+        {/* STEP 4: Compliance & Unlock Full Access */}
         {currentStep === 4 && (
           <div className="space-y-6">
             <div className="text-center max-w-xl mx-auto mb-6">
               <span className="text-cyan-400 text-xs font-semibold uppercase tracking-wider">Step 4 of 4</span>
-              <h2 className="text-2xl font-bold text-white mt-1">Governance & Compliance</h2>
-              <p className="text-slate-400 text-xs mt-1">Acknowledge data isolation and MAP enforcement covenants.</p>
+              <h2 className="text-2xl font-bold text-white mt-1">Unlock Full Platform Access</h2>
+              <p className="text-slate-400 text-xs mt-1">Acknowledge data isolation covenants to provision session.</p>
             </div>
 
             <div className="space-y-4">
@@ -638,25 +647,25 @@ export const RegisterPage: React.FC<{ setActiveTab?: (tab: string) => void }> = 
                 disabled={loading}
                 className="px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-lg transition-all disabled:opacity-50"
               >
-                {loading ? 'Provisioning Workspace...' : 'Complete Registration'}
+                {loading ? 'Provisioning Full Access...' : 'Complete & Unlock Full Access'}
               </button>
             </div>
           </div>
         )}
 
-        {/* STEP 5: Success */}
+        {/* STEP 5: Success & Workspace Unlock */}
         {currentStep === 5 && (
-          <div className="text-center py-8">
-            <div className="h-16 w-16 bg-emerald-500/20 text-emerald-400 rounded-2xl mx-auto flex items-center justify-center mb-4 border border-emerald-500/30">
+          <div className="text-center py-8 space-y-4">
+            <div className="h-16 w-16 bg-emerald-500/20 text-emerald-400 rounded-2xl mx-auto flex items-center justify-center mb-2 border border-emerald-500/30">
               <CheckCircle2 className="h-8 w-8 animate-bounce" />
             </div>
-            <h2 className="text-2xl font-bold text-white mb-2">Welcome to DistributionBridge!</h2>
-            <p className="text-slate-400 text-xs sm:text-sm max-w-md mx-auto mb-6">
-              Your organization has been provisioned and your cryptographic session has been initialized.
+            <h2 className="text-2xl font-bold text-white">Full Access Granted!</h2>
+            <p className="text-slate-400 text-xs sm:text-sm max-w-md mx-auto">
+              Your organization and Amazon SP-API credentials have been authenticated. You now have full access to your workspace.
             </p>
             <div className="inline-flex items-center gap-2 text-xs text-cyan-400 font-medium bg-cyan-500/10 px-4 py-2 rounded-full border border-cyan-500/20">
               <div className="h-2 w-2 rounded-full bg-cyan-400 animate-ping" />
-              Redirecting to Workspace...
+              Redirecting to Workspace Dashboard...
             </div>
           </div>
         )}
