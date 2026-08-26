@@ -27,7 +27,18 @@ FRONTEND_URL = "https://distributionbridge.com"
 AMAZON_AUTH_BASE_URL = "https://sellercentral.amazon.com/apps/authorize/consent"
 AMAZON_TOKEN_URL = "https://api.amazon.com/auth/o2/token"
 LWA_REDIRECT_URI = "https://sales-backend.distributionbridge.com/api/auth/amazon/callback"
+AMAZON_LWA_REDIRECT_URI = "https://sales-backend.distributionbridge.com/api/auth/amazon/callback"
 DEFAULT_MARKETPLACE_ID = "ATVPDKIKX0DER" # US Amazon Marketplace
+
+# ==============================================================================
+# REQUIRED ENCRYPTED SECRETS (Set via `wrangler secret put <KEY>`)
+# - AMAZON_LWA_CLIENT_ID: Login with Amazon (LWA) Client Application ID
+# - AMAZON_LWA_CLIENT_SECRET: LWA Client Secret Key
+# - AMAZON_LWA_REDIRECT_URI: LWA Approved Redirect URI
+# - TOKEN_ENCRYPTION_KEY: AES-256 Symmetric Key for SP-API Token Encryption at Rest
+# - DATABASE_URL: PostgreSQL Hyperdrive Connection String
+# - CSRF_SECRET: HMAC-SHA256 Signature Secret for OAuth State
+# ==============================================================================
 
 # ==============================================================================
 # SCHEDULED CRON TRIGGERS (DAILY AUTOMATED SYNC)

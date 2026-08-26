@@ -1,18 +1,19 @@
-# Example environment variables for local development (`wrangler dev`)
-# Copy this file to `.dev.vars` and fill in your actual credentials.
-# Do NOT commit `.dev.vars` to version control.
+# Local Development Secrets (`.dev.vars`)
+# Fill in actual values for local execution. Never commit `.dev.vars` to Git.
 
-# Login with Amazon (LWA) & Amazon SP-API App Credentials
+# Amazon LWA & SP-API OAuth Credentials
+AMAZON_LWA_CLIENT_ID="amzn1.application-oa2-client.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+AMAZON_LWA_CLIENT_SECRET="amzn1.oa2-cs.v1.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+AMAZON_LWA_REDIRECT_URI="http://localhost:8787/api/auth/amazon/callback"
 LWA_CLIENT_ID="amzn1.application-oa2-client.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 LWA_CLIENT_SECRET="amzn1.oa2-cs.v1.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+LWA_REDIRECT_URI="http://localhost:8787/api/auth/amazon/callback"
 AMAZON_APP_ID="amzn1.sp.solution.xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 
-# Base URLs & Redirect
-LWA_REDIRECT_URI="http://localhost:8787/api/auth/amazon/callback"
-FRONTEND_URL="http://localhost:5173"
-
-# PostgreSQL Database Connection
-DATABASE_URL="postgres://postgres:password@localhost:5432/distributionbridge?sslmode=disable"
-
-# Secret key for HMAC signing OAuth state parameter (CSRF protection)
+# Token Encryption & Security
+TOKEN_ENCRYPTION_KEY="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 CSRF_SECRET="change-this-to-a-very-secure-random-secret-key-minimum-32-chars"
+
+# URLs & Database
+FRONTEND_URL="http://localhost:3000"
+DATABASE_URL="postgres://postgres:postgres@localhost:5432/distributionbridge?sslmode=disable"
