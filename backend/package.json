@@ -9,6 +9,7 @@
     "deploy": "wrangler deploy",
     "test": "node test/test-suite.js",
     "test:sync": "node src/test_sync.js",
+    "test:rls": "node src/test_rls.js",
     "tail": "wrangler tail"
   },
   "keywords": [

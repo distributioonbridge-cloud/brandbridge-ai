@@ -1,5 +1,5 @@
 /**
- * Automated Test Suite for DistributionBridge Unified Backend
+ * Automated Test Suite for DistributionBridge Unified Backend & RLS Security
  */
 
 import { generateSignedState, verifySignedState } from '../src/utils/crypto.js';
@@ -8,6 +8,7 @@ import { getCorsHeaders, jsonResponse, withCors } from '../src/utils/cors.js';
 import { getSpApiEndpoint, buildMonthInterval, parseOrderMetricsForStorage } from '../src/amazon_spapi.js';
 import { evaluateSourcingDeal } from '../src/routes/triage.js';
 import { calculateLogisticsQuote } from '../src/routes/logistics.js';
+import { handlePortal } from '../src/routes/portal.js';
 
 let passed = 0;
 let failed = 0;
@@ -23,7 +24,7 @@ function assert(condition, message) {
 }
 
 async function runTests() {
-  console.log('\n=== RUNNING DISTRIBUTIONBRIDGE UNIFIED BACKEND TEST SUITE ===\n');
+  console.log('\n=== RUNNING DISTRIBUTIONBRIDGE UNIFIED BACKEND & RLS TEST SUITE ===\n');
 
   const mockEnv = {
     AMAZON_APP_ID: 'amzn1.sp.solution.test-app-id-12345',
@@ -54,7 +55,7 @@ async function runTests() {
 
   // Test 3: Expired State Detection
   console.log('\n3. Testing Expired State Detection:');
-  const expiredState = await generateSignedState(payload, mockEnv.CSRF_SECRET, -10); // Expired 10s ago
+  const expiredState = await generateSignedState(payload, mockEnv.CSRF_SECRET, -10);
   const expiredVerification = await verifySignedState(expiredState, mockEnv.CSRF_SECRET);
   assert(expiredVerification.valid === false && expiredVerification.error.includes('expired'), 'Expired state correctly rejected');
 
@@ -162,6 +163,19 @@ async function runTests() {
   assert(quote.quoteId.startsWith('QT-'), 'Quote ID generated');
   assert(quote.costBreakdown.totalLogisticsCost > 0, 'Total logistics cost computed');
   assert(quote.warehouse.id === 'WH-MIDWEST-01', 'Midwest warehouse selected');
+
+  // Test 11: PostgreSQL Row-Level Security (RLS) Investor Transactions
+  console.log('\n11. Testing PostgreSQL RLS Investor Portfolio Session Transactions:');
+  const investorReq = new Request('http://localhost:8787/api/portal/investor/portfolio?investor_id=INV-ALPHA-01', {
+    headers: { Origin: 'http://localhost:3000' },
+  });
+  const rlsResponse = await handlePortal(investorReq, mockEnv);
+  assert(rlsResponse.status === 200, 'GET /api/portal/investor/portfolio returns 200 OK');
+  
+  const rlsData = await rlsResponse.json();
+  assert(rlsData.rlsSessionActive === true, 'RLS session is active in transaction wrapper');
+  assert(rlsData.sessionParam.includes('app.current_investor_id'), 'Transaction sets app.current_investor_id');
+  assert(rlsData.portfolio && rlsData.portfolio.portfolio_status === 'healthy', 'Isolated investor portfolio returned');
 
   console.log(`\n=== RESULTS: ${passed} PASSED, ${failed} FAILED ===\n`);
 
