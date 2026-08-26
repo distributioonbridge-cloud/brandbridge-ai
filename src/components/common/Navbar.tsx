@@ -245,6 +245,14 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
             Pricing
           </button>
           <button
+            onClick={() => setActiveTab('saas')}
+            className={`px-3 py-1.5 rounded-lg transition-colors ${
+              activeTab === 'saas' ? 'text-cyan-400 bg-slate-800/60' : 'text-slate-300 hover:text-white hover:bg-slate-800/40'
+            }`}
+          >
+            SaaS Bento
+          </button>
+          <button
             onClick={() => setActiveTab('settings')}
             className={`px-3 py-1.5 rounded-lg transition-colors ${
               activeTab === 'settings' ? 'text-cyan-400 bg-slate-800/60' : 'text-slate-300 hover:text-white hover:bg-slate-800/40'

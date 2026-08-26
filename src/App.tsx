@@ -19,6 +19,7 @@ import { PricingPage } from './pages/PricingPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { SaasPortalPage } from './pages/SaasPortalPage';
 
 const AppContent: React.FC = () => {
   const { role } = useAuth();
@@ -52,6 +53,8 @@ const AppContent: React.FC = () => {
         return <RegisterPage setActiveTab={setActiveTab} />;
       case 'settings':
         return <SettingsPage setActiveTab={setActiveTab} />;
+      case 'saas':
+        return <SaasPortalPage setActiveTab={setActiveTab} />;
       default:
         return <LandingPage setActiveTab={setActiveTab} />;
     }
