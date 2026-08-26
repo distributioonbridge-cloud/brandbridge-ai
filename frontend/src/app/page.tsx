@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import {
   Building2,
@@ -33,11 +33,11 @@ import {
   User,
   Cpu,
   Globe,
-  Radio
+  Radio,
+  LayoutDashboard
 } from 'lucide-react';
 import { api, BackendHealthResponse, getCurrentUser, logout } from '../services/api';
 
-// Point 3D for Perspective Projection Matrix
 interface Point3D {
   x: number;
   y: number;
@@ -71,9 +71,7 @@ export default function LandingPage() {
   const [averagePriceErosion, setAveragePriceErosion] = useState<number>(14);
   const [monthlyUnitsPerAsin, setMonthlyUnitsPerAsin] = useState<number>(350);
 
-  // ---------------------------------------------------------------------------
-  // 1. HTML5 CANVAS CONTEXT LOOP & 3D PERSPECTIVE PROJECTION MATRIX
-  // ---------------------------------------------------------------------------
+  // 1. HTML5 Canvas 3D Perspective Projection Matrix
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -92,7 +90,6 @@ export default function LandingPage() {
     };
     window.addEventListener('resize', handleResize);
 
-    // Mouse tracking for interactive perspective pitch & yaw
     let mouseX = 0;
     let mouseY = 0;
     let targetRotX = 0.25;
@@ -111,7 +108,6 @@ export default function LandingPage() {
     };
     window.addEventListener('mousemove', handleMouseMove);
 
-    // Generate 3D Grid & Data Node Coordinates
     const gridSize = 14;
     const spacing = 75;
     const points: Point3D[] = [];
@@ -136,7 +132,6 @@ export default function LandingPage() {
       }
     }
 
-    // 3D Perspective Projection Matrix Calculation
     const fov = 450;
     let time = 0;
 
@@ -150,32 +145,23 @@ export default function LandingPage() {
       const cx = width / 2;
       const cy = height / 2 + 50;
 
-      // Rotation matrix sin/cos
       const cosX = Math.cos(currentRotX);
       const sinX = Math.sin(currentRotX);
       const cosY = Math.cos(currentRotY);
       const sinY = Math.sin(currentRotY);
 
-      // Project and draw perspective lines
       ctx.lineWidth = 0.75;
-
       const projectedPoints: { sx: number; sy: number; scale: number; p: Point3D }[] = [];
 
       for (let idx = 0; idx < points.length; idx++) {
         const p = points[idx];
-
-        // Dynamic wave elevation
         const dist = Math.sqrt(p.originX * p.originX + p.originZ * p.originZ);
         const dynamicY = p.originY + Math.sin(dist * 0.03 - time * 2) * 20;
 
-        // 3D Matrix Transformations (Yaw + Pitch)
-        // 1. Rotate Y
         const x1 = p.originX * cosY - p.originZ * sinY;
         const z1 = p.originX * sinY + p.originZ * cosY;
-
-        // 2. Rotate X
         const y2 = dynamicY * cosX - z1 * sinX;
-        const z2 = dynamicY * sinX + z1 * cosX + 600; // translate Z depth
+        const z2 = dynamicY * sinX + z1 * cosX + 600;
 
         if (z2 > 10) {
           const scale = fov / z2;
@@ -185,7 +171,6 @@ export default function LandingPage() {
         }
       }
 
-      // Draw Grid Wireframe
       ctx.strokeStyle = 'rgba(6, 182, 212, 0.12)';
       ctx.beginPath();
       const stride = gridSize + 1;
@@ -196,13 +181,11 @@ export default function LandingPage() {
           if (currIdx >= projectedPoints.length) continue;
           const curr = projectedPoints[currIdx];
 
-          // Connect Horizontal
           if (j < gridSize && currIdx + 1 < projectedPoints.length) {
             const nextH = projectedPoints[currIdx + 1];
             ctx.moveTo(curr.sx, curr.sy);
             ctx.lineTo(nextH.sx, nextH.sy);
           }
-          // Connect Vertical
           if (i < gridSize && currIdx + stride < projectedPoints.length) {
             const nextV = projectedPoints[currIdx + stride];
             ctx.moveTo(curr.sx, curr.sy);
@@ -212,7 +195,6 @@ export default function LandingPage() {
       }
       ctx.stroke();
 
-      // Draw Glowing Nodes & Pulses
       for (let i = 0; i < projectedPoints.length; i++) {
         const { sx, sy, scale, p } = projectedPoints[i];
         const pulse = (Math.sin(time * 3 + p.pulsePhase) + 1) * 0.5;
@@ -224,7 +206,6 @@ export default function LandingPage() {
         ctx.arc(sx, sy, radius, 0, Math.PI * 2);
         ctx.fill();
 
-        // Glow halo for defense nodes
         if (p.size > 2) {
           ctx.strokeStyle = p.color;
           ctx.lineWidth = 0.5;
@@ -275,11 +256,7 @@ export default function LandingPage() {
     window.location.reload();
   };
 
-  // ---------------------------------------------------------------------------
-  // 2. STATE-BOUND RANGE SLIDERS & MATH HOOKS
-  // ---------------------------------------------------------------------------
-
-  // Simulator 1: Wholesale Yield Calculations
+  // 2. Memoized Slider Calculations
   const yieldMetrics = useMemo(() => {
     const unitCost = averageSellingPrice * (1 - targetMargin / 100);
     const unitsProcured = Math.max(1, Math.floor(capitalAllocation / Math.max(1, unitCost)));
@@ -310,7 +287,6 @@ export default function LandingPage() {
     };
   }, [capitalAllocation, targetMargin, inventoryTurnDays, averageSellingPrice]);
 
-  // Simulator 2: Brand Protection ROI Calculations
   const protectionMetrics = useMemo(() => {
     const totalMonthlyVolume = catalogAsinCount * monthlyUnitsPerAsin;
     const monthlyErosionLoss = totalMonthlyVolume * averagePriceErosion * 0.35;
@@ -331,9 +307,7 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-[#070b14] text-slate-100 font-sans selection:bg-cyan-500 selection:text-slate-950 pb-20">
-      {/* ------------------------------------------------------------------- */}
-      {/* 3. NAVIGATION HEADER */}
-      {/* ------------------------------------------------------------------- */}
+      {/* Navigation Header */}
       <header className="sticky top-0 z-50 backdrop-blur-xl bg-[#070b14]/85 border-b border-slate-800/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -346,7 +320,7 @@ export default function LandingPage() {
                   Distribution<span className="text-cyan-400">Bridge</span>
                 </span>
                 <span className="hidden sm:inline-block ml-2 px-2 py-0.5 text-[9px] font-bold uppercase rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
-                  v4.0 Matrix Engine
+                  v5.0 Enterprise
                 </span>
               </div>
             </Link>
@@ -354,22 +328,23 @@ export default function LandingPage() {
 
           <nav className="flex items-center gap-2 sm:gap-3">
             <Link
+              href="/saas"
+              className="px-3 py-1.5 text-xs font-semibold text-cyan-400 hover:text-cyan-300 bg-cyan-500/10 border border-cyan-500/30 rounded-lg transition-colors flex items-center gap-1.5"
+            >
+              <LayoutDashboard className="h-3.5 w-3.5" />
+              SaaS Console
+            </Link>
+            <Link
               href="/seller"
               className="px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 rounded-lg transition-colors"
             >
-              Seller Sourcing
+              Seller
             </Link>
             <Link
               href="/brand"
               className="px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 rounded-lg transition-colors"
             >
-              Brand Protection
-            </Link>
-            <Link
-              href="/saas"
-              className="px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 rounded-lg transition-colors"
-            >
-              SaaS Bento
+              Brand
             </Link>
             <Link
               href="/settings"
@@ -411,9 +386,7 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {/* ------------------------------------------------------------------- */}
-      {/* 4. LIVE TELEMETRY STRIP */}
-      {/* ------------------------------------------------------------------- */}
+      {/* Telemetry Strip */}
       <section className="bg-slate-950/90 border-b border-slate-800/60 py-2.5 px-4 sm:px-8 text-xs">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-6 flex-wrap">
@@ -449,16 +422,12 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ------------------------------------------------------------------- */}
-      {/* 5. HERO SECTION WITH 3D CANVAS PERSPECTIVE PROJECTION MATRIX */}
-      {/* ------------------------------------------------------------------- */}
+      {/* Hero Section with Canvas */}
       <section className="relative overflow-hidden pt-12 pb-20 lg:pt-20 lg:pb-28 border-b border-slate-800/80">
-        {/* HTML5 Canvas Background */}
         <div className="absolute inset-0 z-0 pointer-events-none opacity-65">
           <canvas ref={canvasRef} className="w-full h-full" />
         </div>
 
-        {/* Ambient Gradient Glows */}
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-gradient-to-tr from-cyan-500/15 via-blue-600/15 to-purple-600/10 rounded-full blur-[140px] pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -480,7 +449,6 @@ export default function LandingPage() {
               and 24/7 autonomous MAP price defense across US & EU marketplaces.
             </p>
 
-            {/* 4-Step Access Action CTAs */}
             <div className="flex flex-wrap items-center justify-center gap-3 pt-4">
               <Link
                 href="/register"
@@ -500,8 +468,8 @@ export default function LandingPage() {
                 href="/saas"
                 className="px-5 py-3.5 rounded-2xl bg-slate-950/80 hover:bg-slate-900 text-slate-300 border border-slate-800 font-medium text-xs sm:text-sm transition-all flex items-center gap-1.5"
               >
-                <Cpu className="h-4 w-4 text-cyan-400" />
-                SaaS Bento Console
+                <LayoutDashboard className="h-4 w-4 text-cyan-400" />
+                SaaS Console
               </Link>
             </div>
 
@@ -515,7 +483,7 @@ export default function LandingPage() {
               ].map((item, idx) => (
                 <Link
                   key={idx}
-                  href={idx === 0 ? '/' : idx === 3 ? '/seller' : '/register'}
+                  href={idx === 0 ? '/' : idx === 3 ? '/saas' : '/register'}
                   className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-cyan-500/50 transition-all backdrop-blur-md"
                 >
                   <span className="text-[10px] font-mono text-cyan-400 font-bold uppercase">{item.step}</span>
@@ -528,9 +496,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ------------------------------------------------------------------- */}
-      {/* 6. STATE-BOUND RANGE SLIDERS & MATH SIMULATORS */}
-      {/* ------------------------------------------------------------------- */}
+      {/* Range Sliders Section */}
       <section className="py-16 bg-[#070b14] border-b border-slate-800/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-12 space-y-3">
@@ -546,7 +512,7 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* SIMULATOR 1: Wholesale Capital & Margin Yield Simulator */}
+            {/* Simulator 1 */}
             <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl backdrop-blur-md">
               <div className="flex items-center justify-between border-b border-slate-800 pb-4">
                 <div className="flex items-center gap-3">
@@ -563,7 +529,6 @@ export default function LandingPage() {
                 </span>
               </div>
 
-              {/* Sliders */}
               <div className="space-y-4">
                 <div>
                   <div className="flex items-center justify-between text-xs mb-1.5">
@@ -632,7 +597,6 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {/* Computed Results Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
                 <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800/80">
                   <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Units / Batch</span>
@@ -660,7 +624,7 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* SIMULATOR 2: Brand Protection & MAP Recovery Calculator */}
+            {/* Simulator 2 */}
             <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl backdrop-blur-md">
               <div className="flex items-center justify-between border-b border-slate-800 pb-4">
                 <div className="flex items-center gap-3">
@@ -677,7 +641,6 @@ export default function LandingPage() {
                 </span>
               </div>
 
-              {/* Sliders */}
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -746,7 +709,6 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {/* Computed Results Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
                 <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800/80">
                   <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Recovered / Mo</span>
@@ -779,9 +741,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ------------------------------------------------------------------- */}
-      {/* 7. FOOTER */}
-      {/* ------------------------------------------------------------------- */}
+      {/* Footer */}
       <footer className="py-12 bg-[#070b14] text-slate-500 text-xs border-t border-slate-800/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
@@ -792,7 +752,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-4 text-slate-400">
             <Link href="/seller" className="hover:text-white transition-colors">Seller</Link>
             <Link href="/brand" className="hover:text-white transition-colors">Brand</Link>
-            <Link href="/saas" className="hover:text-white transition-colors">SaaS Bento</Link>
+            <Link href="/saas" className="hover:text-white transition-colors">SaaS Console</Link>
             <Link href="/settings" className="hover:text-white transition-colors">Settings</Link>
             <Link href="/register" className="hover:text-white transition-colors">Register</Link>
           </div>
