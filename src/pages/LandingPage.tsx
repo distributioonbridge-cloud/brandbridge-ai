@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   ShieldAlert,
   ShieldCheck,
@@ -10,36 +10,41 @@ import {
   Sparkles,
   ArrowRight,
   CheckCircle2,
-  Bot,
-  Scale,
-  FileCheck,
-  Users,
-  Award,
   Database,
   Activity,
-  Sliders,
   DollarSign,
   Truck,
   Layers,
   ChevronRight,
-  ExternalLink,
   KeyRound,
-  Check
+  Cpu
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
+
+interface Point3D {
+  x: number;
+  y: number;
+  z: number;
+  originX: number;
+  originY: number;
+  originZ: number;
+  color: string;
+  size: number;
+  pulsePhase: number;
+}
 
 interface LandingPageProps {
   setActiveTab: (tab: string) => void;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({ setActiveTab }) => {
-  const { user, switchRole, isAuthenticated } = useAuth();
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const { switchRole } = useAuth();
   const { openStripeModal } = useData();
 
   // Dynamic live state counters
   const [tickerCount, setTickerCount] = useState<number>(14820);
-  const [activeTabFeature, setActiveTabFeature] = useState<'sourcing' | 'map' | 'logistics' | 'rls'>('sourcing');
 
   // Simulator 1: Wholesale Yield State
   const [capitalAllocation, setCapitalAllocation] = useState<number>(100000);
@@ -53,6 +58,163 @@ export const LandingPage: React.FC<LandingPageProps> = ({ setActiveTab }) => {
   const [averagePriceErosion, setAveragePriceErosion] = useState<number>(14);
   const [monthlyUnitsPerAsin, setMonthlyUnitsPerAsin] = useState<number>(350);
 
+  // 1. HTML5 Canvas Perspective Projection Loop
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d', { alpha: true });
+    if (!ctx) return;
+
+    let animationFrameId: number;
+    let width = (canvas.width = canvas.parentElement?.clientWidth || window.innerWidth);
+    let height = (canvas.height = canvas.parentElement?.clientHeight || 600);
+
+    const handleResize = () => {
+      if (!canvas || !canvas.parentElement) return;
+      width = canvas.width = canvas.parentElement.clientWidth;
+      height = canvas.height = canvas.parentElement.clientHeight || 600;
+    };
+    window.addEventListener('resize', handleResize);
+
+    let mouseX = 0;
+    let mouseY = 0;
+    let targetRotX = 0.25;
+    let targetRotY = 0;
+    let currentRotX = 0.25;
+    let currentRotY = 0;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left - width / 2;
+      const y = e.clientY - rect.top - height / 2;
+      mouseX = x / (width / 2);
+      mouseY = y / (height / 2);
+      targetRotY = mouseX * 0.35;
+      targetRotX = 0.25 + mouseY * 0.2;
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+
+    const gridSize = 14;
+    const spacing = 75;
+    const points: Point3D[] = [];
+
+    for (let i = -gridSize / 2; i <= gridSize / 2; i++) {
+      for (let j = -gridSize / 2; j <= gridSize / 2; j++) {
+        const x = i * spacing;
+        const z = j * spacing;
+        const y = Math.sin(Math.sqrt(i * i + j * j) * 0.5) * 25;
+        const isDefenseNode = (i + j) % 4 === 0;
+        points.push({
+          x,
+          y,
+          z,
+          originX: x,
+          originY: y,
+          originZ: z,
+          color: isDefenseNode ? '#06b6d4' : '#3b82f6',
+          size: isDefenseNode ? 2.5 : 1.5,
+          pulsePhase: Math.random() * Math.PI * 2
+        });
+      }
+    }
+
+    const fov = 450;
+    let time = 0;
+
+    const render = () => {
+      time += 0.015;
+      currentRotX += (targetRotX - currentRotX) * 0.05;
+      currentRotY += (targetRotY - currentRotY) * 0.05;
+
+      ctx.clearRect(0, 0, width, height);
+
+      const cx = width / 2;
+      const cy = height / 2 + 50;
+
+      const cosX = Math.cos(currentRotX);
+      const sinX = Math.sin(currentRotX);
+      const cosY = Math.cos(currentRotY);
+      const sinY = Math.sin(currentRotY);
+
+      ctx.lineWidth = 0.75;
+      const projectedPoints: { sx: number; sy: number; scale: number; p: Point3D }[] = [];
+
+      for (let idx = 0; idx < points.length; idx++) {
+        const p = points[idx];
+        const dist = Math.sqrt(p.originX * p.originX + p.originZ * p.originZ);
+        const dynamicY = p.originY + Math.sin(dist * 0.03 - time * 2) * 20;
+
+        const x1 = p.originX * cosY - p.originZ * sinY;
+        const z1 = p.originX * sinY + p.originZ * cosY;
+        const y2 = dynamicY * cosX - z1 * sinX;
+        const z2 = dynamicY * sinX + z1 * cosX + 600;
+
+        if (z2 > 10) {
+          const scale = fov / z2;
+          const sx = cx + x1 * scale;
+          const sy = cy + y2 * scale;
+          projectedPoints.push({ sx, sy, scale, p });
+        }
+      }
+
+      ctx.strokeStyle = 'rgba(6, 182, 212, 0.12)';
+      ctx.beginPath();
+      const stride = gridSize + 1;
+
+      for (let i = 0; i <= gridSize; i++) {
+        for (let j = 0; j <= gridSize; j++) {
+          const currIdx = i * stride + j;
+          if (currIdx >= projectedPoints.length) continue;
+          const curr = projectedPoints[currIdx];
+
+          if (j < gridSize && currIdx + 1 < projectedPoints.length) {
+            const nextH = projectedPoints[currIdx + 1];
+            ctx.moveTo(curr.sx, curr.sy);
+            ctx.lineTo(nextH.sx, nextH.sy);
+          }
+          if (i < gridSize && currIdx + stride < projectedPoints.length) {
+            const nextV = projectedPoints[currIdx + stride];
+            ctx.moveTo(curr.sx, curr.sy);
+            ctx.lineTo(nextV.sx, nextV.sy);
+          }
+        }
+      }
+      ctx.stroke();
+
+      for (let i = 0; i < projectedPoints.length; i++) {
+        const { sx, sy, scale, p } = projectedPoints[i];
+        const pulse = (Math.sin(time * 3 + p.pulsePhase) + 1) * 0.5;
+        const radius = Math.max(1, p.size * scale * (0.8 + pulse * 0.4));
+
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = Math.min(1, Math.max(0.1, scale * 1.2));
+        ctx.beginPath();
+        ctx.arc(sx, sy, radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (p.size > 2) {
+          ctx.strokeStyle = p.color;
+          ctx.lineWidth = 0.5;
+          ctx.beginPath();
+          ctx.arc(sx, sy, radius * 2.2 * pulse, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      }
+      ctx.globalAlpha = 1.0;
+
+      animationFrameId = requestAnimationFrame(render);
+    };
+
+    render();
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, []);
+
   useEffect(() => {
     const interval = setInterval(() => {
       setTickerCount(prev => prev + Math.floor(Math.random() * 3) + 1);
@@ -60,7 +222,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ setActiveTab }) => {
     return () => clearInterval(interval);
   }, []);
 
-  // Memoized Math Calculations for Simulator 1
   const yieldMetrics = useMemo(() => {
     const unitCost = averageSellingPrice * (1 - targetMargin / 100);
     const unitsProcured = Math.max(1, Math.floor(capitalAllocation / Math.max(1, unitCost)));
@@ -91,7 +252,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ setActiveTab }) => {
     };
   }, [capitalAllocation, targetMargin, inventoryTurnDays, averageSellingPrice]);
 
-  // Memoized Math Calculations for Simulator 2
   const protectionMetrics = useMemo(() => {
     const totalMonthlyVolume = catalogAsinCount * monthlyUnitsPerAsin;
     const monthlyErosionLoss = totalMonthlyVolume * averagePriceErosion * 0.35;
@@ -112,27 +272,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({ setActiveTab }) => {
 
   return (
     <div className="space-y-16 pb-20">
-      {/* ------------------------------------------------------------------- */}
-      {/* 1. LIVE TELEMETRY & STATUS STRIP */}
-      {/* ------------------------------------------------------------------- */}
+      {/* Telemetry Strip */}
       <div className="glass-panel rounded-2xl py-2.5 px-4 sm:px-6 border border-slate-800 flex flex-wrap items-center justify-between gap-4 text-xs">
         <div className="flex items-center gap-6 flex-wrap">
           <div className="flex items-center gap-2">
             <span className="inline-block w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-            <span className="text-slate-400">Microservice Engine:</span>
-            <span className="font-semibold text-white">Online (v3.5 Cloudflare Worker)</span>
+            <span className="text-slate-400">Worker Matrix Engine:</span>
+            <span className="font-semibold text-white">Online (v4.0 Matrix Loop)</span>
           </div>
 
           <div className="flex items-center gap-2">
             <Database className="w-3.5 h-3.5 text-cyan-400" />
             <span className="text-slate-400">PostgreSQL RLS:</span>
             <span className="font-mono text-cyan-400 font-semibold">Active & Sandboxed</span>
-          </div>
-
-          <div className="hidden md:flex items-center gap-2">
-            <Store className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="text-slate-400">Amazon SP-API Gateway:</span>
-            <span className="text-slate-200 font-medium">LWA Ready</span>
           </div>
         </div>
 
@@ -146,11 +298,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ setActiveTab }) => {
         </div>
       </div>
 
-      {/* ------------------------------------------------------------------- */}
-      {/* 2. HERO FUNNEL SECTION */}
-      {/* ------------------------------------------------------------------- */}
+      {/* Hero Section with Canvas */}
       <section className="relative pt-6 sm:pt-12 pb-10 overflow-hidden text-center space-y-8">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-gradient-to-tr from-cyan-500/15 via-blue-600/15 to-purple-600/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute inset-0 z-0 pointer-events-none opacity-60">
+          <canvas ref={canvasRef} className="w-full h-full" />
+        </div>
 
         <div className="max-w-4xl mx-auto space-y-6 relative z-10">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-panel border border-cyan-500/30 text-xs font-semibold text-cyan-400 cyan-glow">
@@ -168,7 +320,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ setActiveTab }) => {
             automated deal triage, 3PL logistics routing, and 24/7 MAP defense.
           </p>
 
-          {/* 4-Step Access Funnel Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
             <button
               onClick={() => setActiveTab('register')}
@@ -186,35 +337,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ setActiveTab }) => {
               <Store className="w-5 h-5 text-emerald-400" />
               2. Connect Amazon SP-API & Unlock Access
             </button>
-          </div>
-
-          {/* 4-Step Visual Progress Funnel */}
-          <div className="max-w-3xl mx-auto pt-8">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-left">
-              {[
-                { step: 'Step 1', title: 'Explore & Model', desc: 'Simulate ROI & Yields' },
-                { step: 'Step 2', title: 'Register / Sign In', desc: 'Enterprise Credentials' },
-                { step: 'Step 3', title: 'Integration', desc: 'Link SP-API / LWA' },
-                { step: 'Step 4', title: 'Full Access', desc: 'Unlocked Workspace' }
-              ].map((item, idx) => (
-                <div
-                  key={idx}
-                  onClick={() => setActiveTab(idx === 0 ? 'landing' : 'register')}
-                  className="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-cyan-500/50 cursor-pointer transition-all"
-                >
-                  <span className="text-[10px] font-mono text-cyan-400 font-bold uppercase">{item.step}</span>
-                  <p className="text-xs font-bold text-white mt-0.5">{item.title}</p>
-                  <p className="text-[11px] text-slate-400">{item.desc}</p>
-                </div>
-              ))}
-            </div>
+            <button
+              onClick={() => setActiveTab('saas')}
+              className="w-full sm:w-auto px-6 py-4 rounded-2xl bg-slate-900/90 border border-slate-700 hover:border-cyan-500 text-cyan-400 font-bold text-sm transition-all flex items-center justify-center gap-2"
+            >
+              <Cpu className="w-4 h-4 text-cyan-400" />
+              SaaS Bento Console
+            </button>
           </div>
         </div>
       </section>
 
-      {/* ------------------------------------------------------------------- */}
-      {/* 3. INTERACTIVE SLIDER MATH SIMULATORS */}
-      {/* ------------------------------------------------------------------- */}
+      {/* Simulators */}
       <section className="space-y-8">
         <div className="text-center max-w-2xl mx-auto space-y-2">
           <span className="px-3 py-1 rounded-full text-xs font-semibold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
@@ -229,7 +363,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ setActiveTab }) => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* SIMULATOR 1: Wholesale Capital & Margin Yield */}
+          {/* Simulator 1 */}
           <div className="glass-panel rounded-3xl p-6 sm:p-8 border border-slate-800 space-y-6 bg-slate-900/80 shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-800 pb-4">
               <div className="flex items-center gap-3">
@@ -246,7 +380,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ setActiveTab }) => {
               </span>
             </div>
 
-            {/* Sliders */}
             <div className="space-y-4">
               <div>
                 <div className="flex items-center justify-between text-xs mb-1.5">
@@ -315,7 +448,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ setActiveTab }) => {
               </div>
             </div>
 
-            {/* Computed Results Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
               <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800/80">
                 <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Units / Batch</span>
@@ -347,7 +479,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ setActiveTab }) => {
             </button>
           </div>
 
-          {/* SIMULATOR 2: Brand Protection & MAP Recovery */}
+          {/* Simulator 2 */}
           <div className="glass-panel rounded-3xl p-6 sm:p-8 border border-slate-800 space-y-6 bg-slate-900/80 shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-800 pb-4">
               <div className="flex items-center gap-3">
@@ -364,7 +496,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ setActiveTab }) => {
               </span>
             </div>
 
-            {/* Sliders */}
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -433,7 +564,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ setActiveTab }) => {
               </div>
             </div>
 
-            {/* Computed Results Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
               <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800/80">
                 <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Recovered / Mo</span>
@@ -464,74 +594,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ setActiveTab }) => {
             >
               Access Brand Defense Suite
               <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* ------------------------------------------------------------------- */}
-      {/* 4. CORE PLATFORM PILLARS (DEEP DIVE) */}
-      {/* ------------------------------------------------------------------- */}
-      <section className="space-y-8">
-        <div className="text-center max-w-2xl mx-auto space-y-2">
-          <h2 className="text-2xl sm:text-3xl font-bold text-white">Built for High-Velocity Amazon Commerce</h2>
-          <p className="text-slate-400 text-xs sm:text-sm">
-            Explore native engines engineered for wholesale deal scoring, 3PL logistics, and database sandboxing.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="p-6 rounded-3xl bg-slate-900/60 border border-slate-800 hover:border-slate-700 transition-all space-y-4">
-            <div className="h-10 w-10 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center border border-cyan-500/20">
-              <Store className="h-5 w-5" />
-            </div>
-            <h3 className="text-lg font-bold text-white">Sourcing Triage Engine</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Evaluates wholesale product manifests against live Amazon SP-API BuyBox price histories,
-              calculating deal scores, net ROI, and FBA fee deductions in seconds.
-            </p>
-            <button
-              onClick={() => {
-                switchRole('Seller');
-                setActiveTab('seller-dashboard');
-              }}
-              className="inline-flex items-center gap-1.5 text-xs text-cyan-400 font-semibold hover:underline"
-            >
-              Explore Seller Tools <ChevronRight className="h-3.5 w-3.5" />
-            </button>
-          </div>
-
-          <div className="p-6 rounded-3xl bg-slate-900/60 border border-slate-800 hover:border-slate-700 transition-all space-y-4">
-            <div className="h-10 w-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center border border-blue-500/20">
-              <Truck className="h-5 w-5" />
-            </div>
-            <h3 className="text-lg font-bold text-white">3PL Logistics & FBA Prep</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Connects directly to certified 3PL hubs across Chicago (MDW2), Dallas (DFW6), and California (ONT8)
-              for automated pallet receiving, polybagging, and Amazon FC routing.
-            </p>
-            <button
-              onClick={() => setActiveTab('warehouses')}
-              className="inline-flex items-center gap-1.5 text-xs text-blue-400 font-semibold hover:underline"
-            >
-              View 3PL Hubs <ChevronRight className="h-3.5 w-3.5" />
-            </button>
-          </div>
-
-          <div className="p-6 rounded-3xl bg-slate-900/60 border border-slate-800 hover:border-slate-700 transition-all space-y-4">
-            <div className="h-10 w-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center border border-indigo-500/20">
-              <Database className="h-5 w-5" />
-            </div>
-            <h3 className="text-lg font-bold text-white">PostgreSQL Row-Level Security</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Ensures 100% cryptographic isolation between seller catalogs, investor allocation portfolios, and
-              proprietary pricing models via Hyperdrive pooled connections.
-            </p>
-            <button
-              onClick={() => setActiveTab('register')}
-              className="inline-flex items-center gap-1.5 text-xs text-indigo-400 font-semibold hover:underline"
-            >
-              Register & Sandboxing <ChevronRight className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>

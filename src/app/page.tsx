@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import {
   Building2,
@@ -30,19 +30,36 @@ import {
   Check,
   ChevronRight,
   LogOut,
-  User
+  User,
+  Cpu,
+  Globe,
+  Radio
 } from 'lucide-react';
 import { api, BackendHealthResponse, getCurrentUser, logout } from '../services/api';
 
+// Point 3D for Perspective Projection Matrix
+interface Point3D {
+  x: number;
+  y: number;
+  z: number;
+  originX: number;
+  originY: number;
+  originZ: number;
+  color: string;
+  size: number;
+  pulsePhase: number;
+}
+
 export default function LandingPage() {
-  // Live State Trackers
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  // Live Telemetry & Session State
   const [health, setHealth] = useState<BackendHealthResponse | null>(null);
   const [loadingHealth, setLoadingHealth] = useState<boolean>(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [tickerCount, setTickerCount] = useState<number>(14820);
-  const [activeTabFeature, setActiveTabFeature] = useState<'sourcing' | 'map' | 'logistics' | 'rls'>('sourcing');
+  const [guardedAsinCount, setGuardedAsinCount] = useState<number>(14820);
 
-  // Slider Math Hook State 1: Wholesale Capital & Yield Simulator
+  // Slider Math Hook State 1: Wholesale Capital & Margin Yield Simulator
   const [capitalAllocation, setCapitalAllocation] = useState<number>(100000);
   const [targetMargin, setTargetMargin] = useState<number>(32);
   const [inventoryTurnDays, setInventoryTurnDays] = useState<number>(45);
@@ -54,14 +71,189 @@ export default function LandingPage() {
   const [averagePriceErosion, setAveragePriceErosion] = useState<number>(14);
   const [monthlyUnitsPerAsin, setMonthlyUnitsPerAsin] = useState<number>(350);
 
+  // ---------------------------------------------------------------------------
+  // 1. HTML5 CANVAS CONTEXT LOOP & 3D PERSPECTIVE PROJECTION MATRIX
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d', { alpha: true });
+    if (!ctx) return;
+
+    let animationFrameId: number;
+    let width = (canvas.width = canvas.parentElement?.clientWidth || window.innerWidth);
+    let height = (canvas.height = canvas.parentElement?.clientHeight || 600);
+
+    const handleResize = () => {
+      if (!canvas || !canvas.parentElement) return;
+      width = canvas.width = canvas.parentElement.clientWidth;
+      height = canvas.height = canvas.parentElement.clientHeight || 600;
+    };
+    window.addEventListener('resize', handleResize);
+
+    // Mouse tracking for interactive perspective pitch & yaw
+    let mouseX = 0;
+    let mouseY = 0;
+    let targetRotX = 0.25;
+    let targetRotY = 0;
+    let currentRotX = 0.25;
+    let currentRotY = 0;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left - width / 2;
+      const y = e.clientY - rect.top - height / 2;
+      mouseX = x / (width / 2);
+      mouseY = y / (height / 2);
+      targetRotY = mouseX * 0.35;
+      targetRotX = 0.25 + mouseY * 0.2;
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+
+    // Generate 3D Grid & Data Node Coordinates
+    const gridSize = 14;
+    const spacing = 75;
+    const points: Point3D[] = [];
+
+    for (let i = -gridSize / 2; i <= gridSize / 2; i++) {
+      for (let j = -gridSize / 2; j <= gridSize / 2; j++) {
+        const x = i * spacing;
+        const z = j * spacing;
+        const y = Math.sin(Math.sqrt(i * i + j * j) * 0.5) * 25;
+        const isDefenseNode = (i + j) % 4 === 0;
+        points.push({
+          x,
+          y,
+          z,
+          originX: x,
+          originY: y,
+          originZ: z,
+          color: isDefenseNode ? '#06b6d4' : '#3b82f6',
+          size: isDefenseNode ? 2.5 : 1.5,
+          pulsePhase: Math.random() * Math.PI * 2
+        });
+      }
+    }
+
+    // 3D Perspective Projection Matrix Calculation
+    const fov = 450;
+    let time = 0;
+
+    const render = () => {
+      time += 0.015;
+      currentRotX += (targetRotX - currentRotX) * 0.05;
+      currentRotY += (targetRotY - currentRotY) * 0.05;
+
+      ctx.clearRect(0, 0, width, height);
+
+      const cx = width / 2;
+      const cy = height / 2 + 50;
+
+      // Rotation matrix sin/cos
+      const cosX = Math.cos(currentRotX);
+      const sinX = Math.sin(currentRotX);
+      const cosY = Math.cos(currentRotY);
+      const sinY = Math.sin(currentRotY);
+
+      // Project and draw perspective lines
+      ctx.lineWidth = 0.75;
+
+      const projectedPoints: { sx: number; sy: number; scale: number; p: Point3D }[] = [];
+
+      for (let idx = 0; idx < points.length; idx++) {
+        const p = points[idx];
+
+        // Dynamic wave elevation
+        const dist = Math.sqrt(p.originX * p.originX + p.originZ * p.originZ);
+        const dynamicY = p.originY + Math.sin(dist * 0.03 - time * 2) * 20;
+
+        // 3D Matrix Transformations (Yaw + Pitch)
+        // 1. Rotate Y
+        const x1 = p.originX * cosY - p.originZ * sinY;
+        const z1 = p.originX * sinY + p.originZ * cosY;
+
+        // 2. Rotate X
+        const y2 = dynamicY * cosX - z1 * sinX;
+        const z2 = dynamicY * sinX + z1 * cosX + 600; // translate Z depth
+
+        if (z2 > 10) {
+          const scale = fov / z2;
+          const sx = cx + x1 * scale;
+          const sy = cy + y2 * scale;
+          projectedPoints.push({ sx, sy, scale, p });
+        }
+      }
+
+      // Draw Grid Wireframe
+      ctx.strokeStyle = 'rgba(6, 182, 212, 0.12)';
+      ctx.beginPath();
+      const stride = gridSize + 1;
+
+      for (let i = 0; i <= gridSize; i++) {
+        for (let j = 0; j <= gridSize; j++) {
+          const currIdx = i * stride + j;
+          if (currIdx >= projectedPoints.length) continue;
+          const curr = projectedPoints[currIdx];
+
+          // Connect Horizontal
+          if (j < gridSize && currIdx + 1 < projectedPoints.length) {
+            const nextH = projectedPoints[currIdx + 1];
+            ctx.moveTo(curr.sx, curr.sy);
+            ctx.lineTo(nextH.sx, nextH.sy);
+          }
+          // Connect Vertical
+          if (i < gridSize && currIdx + stride < projectedPoints.length) {
+            const nextV = projectedPoints[currIdx + stride];
+            ctx.moveTo(curr.sx, curr.sy);
+            ctx.lineTo(nextV.sx, nextV.sy);
+          }
+        }
+      }
+      ctx.stroke();
+
+      // Draw Glowing Nodes & Pulses
+      for (let i = 0; i < projectedPoints.length; i++) {
+        const { sx, sy, scale, p } = projectedPoints[i];
+        const pulse = (Math.sin(time * 3 + p.pulsePhase) + 1) * 0.5;
+        const radius = Math.max(1, p.size * scale * (0.8 + pulse * 0.4));
+
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = Math.min(1, Math.max(0.1, scale * 1.2));
+        ctx.beginPath();
+        ctx.arc(sx, sy, radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Glow halo for defense nodes
+        if (p.size > 2) {
+          ctx.strokeStyle = p.color;
+          ctx.lineWidth = 0.5;
+          ctx.beginPath();
+          ctx.arc(sx, sy, radius * 2.2 * pulse, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      }
+      ctx.globalAlpha = 1.0;
+
+      animationFrameId = requestAnimationFrame(render);
+    };
+
+    render();
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, []);
+
   useEffect(() => {
     setCurrentUser(getCurrentUser());
     fetchHealth();
 
-    // Subtle dynamic counter ticker animation
     const interval = setInterval(() => {
-      setTickerCount(prev => prev + Math.floor(Math.random() * 3) + 1);
-    }, 4000);
+      setGuardedAsinCount(prev => prev + Math.floor(Math.random() * 3) + 1);
+    }, 4500);
     return () => clearInterval(interval);
   }, []);
 
@@ -71,7 +263,7 @@ export default function LandingPage() {
       const data = await api.getBackendHealth();
       setHealth(data);
     } catch (err) {
-      console.warn('Backend probe:', err);
+      console.warn('Backend health query:', err);
     } finally {
       setLoadingHealth(false);
     }
@@ -84,7 +276,7 @@ export default function LandingPage() {
   };
 
   // ---------------------------------------------------------------------------
-  // SLIDER MATH HOOKS (Memoized calculations)
+  // 2. STATE-BOUND RANGE SLIDERS & MATH HOOKS
   // ---------------------------------------------------------------------------
 
   // Simulator 1: Wholesale Yield Calculations
@@ -93,17 +285,12 @@ export default function LandingPage() {
     const unitsProcured = Math.max(1, Math.floor(capitalAllocation / Math.max(1, unitCost)));
     const grossRevenue = unitsProcured * averageSellingPrice;
     const grossProfit = grossRevenue - capitalAllocation;
-    
-    // Standard Amazon FBA 15% referral + $4.50 pick/pack fulfillment estimate
     const fbaFeePerUnit = averageSellingPrice * 0.15 + 4.25;
     const totalFbaFees = unitsProcured * fbaFeePerUnit;
     const netProfitPerCycle = Math.max(0, grossProfit - totalFbaFees);
-    
     const annualCycles = 365 / Math.max(1, inventoryTurnDays);
     const annualizedProfit = netProfitPerCycle * annualCycles;
     const annualizedYieldPercent = (annualizedProfit / Math.max(1, capitalAllocation)) * 100;
-    
-    // Algorithmic Deal Score (0 - 100 scale)
     const dealScore = Math.min(
       99,
       Math.max(40, Math.round(targetMargin * 1.6 + annualCycles * 2.8 + (averageSellingPrice > 35 ? 10 : 4)))
@@ -126,9 +313,7 @@ export default function LandingPage() {
   // Simulator 2: Brand Protection ROI Calculations
   const protectionMetrics = useMemo(() => {
     const totalMonthlyVolume = catalogAsinCount * monthlyUnitsPerAsin;
-    // Estimate 35% of volume lost to unauthorized MAP undercutting
     const monthlyErosionLoss = totalMonthlyVolume * averagePriceErosion * 0.35;
-    // Automated agentic defense recovers ~88% of lost margins
     const recoveredRevenueMonthly = monthlyErosionLoss * 0.88;
     const recoveredAnnualized = recoveredRevenueMonthly * 12;
     const buyBoxUpliftPercent = Math.min(46, Math.round(unauthorizedSellers * 3.8 + 14));
@@ -145,57 +330,62 @@ export default function LandingPage() {
   }, [catalogAsinCount, unauthorizedSellers, averagePriceErosion, monthlyUnitsPerAsin]);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-50 selection:bg-cyan-500 selection:text-slate-950 font-sans">
-      {/* --------------------------------------------------------------------- */}
-      {/* 1. NAVIGATION HEADER */}
-      {/* --------------------------------------------------------------------- */}
-      <header className="sticky top-0 z-50 backdrop-blur-md bg-slate-950/85 border-b border-slate-800/80">
+    <div className="min-h-screen bg-[#070b14] text-slate-100 font-sans selection:bg-cyan-500 selection:text-slate-950 pb-20">
+      {/* ------------------------------------------------------------------- */}
+      {/* 3. NAVIGATION HEADER */}
+      {/* ------------------------------------------------------------------- */}
+      <header className="sticky top-0 z-50 backdrop-blur-xl bg-[#070b14]/85 border-b border-slate-800/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-600 p-[1px] flex items-center justify-center shadow-lg shadow-cyan-500/20">
-              <div className="h-full w-full bg-slate-950 rounded-[11px] flex items-center justify-center">
-                <Layers className="h-5 w-5 text-cyan-400" />
+            <Link href="/" className="flex items-center gap-2.5 group">
+              <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-600 flex items-center justify-center text-slate-950 font-bold shadow-lg shadow-cyan-500/20 group-hover:scale-105 transition-transform">
+                <Layers className="h-5 w-5 text-slate-950" />
               </div>
-            </div>
-            <div>
-              <span className="text-xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-slate-400">
-                Distribution<span className="text-cyan-400">Bridge</span>
-              </span>
-              <span className="hidden sm:inline-block ml-2 px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-                v3.5 Enterprise
-              </span>
-            </div>
+              <div>
+                <span className="font-extrabold text-lg text-white tracking-tight">
+                  Distribution<span className="text-cyan-400">Bridge</span>
+                </span>
+                <span className="hidden sm:inline-block ml-2 px-2 py-0.5 text-[9px] font-bold uppercase rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+                  v4.0 Matrix Engine
+                </span>
+              </div>
+            </Link>
           </div>
 
           <nav className="flex items-center gap-2 sm:gap-3">
             <Link
               href="/seller"
-              className="px-3 py-1.5 text-xs sm:text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 rounded-lg transition-colors"
+              className="px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 rounded-lg transition-colors"
             >
-              Seller Dashboard
+              Seller Sourcing
             </Link>
             <Link
               href="/brand"
-              className="px-3 py-1.5 text-xs sm:text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 rounded-lg transition-colors"
+              className="px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 rounded-lg transition-colors"
             >
-              Brand Manager
+              Brand Protection
+            </Link>
+            <Link
+              href="/saas"
+              className="px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 rounded-lg transition-colors"
+            >
+              SaaS Bento
             </Link>
             <Link
               href="/settings"
-              className="px-3 py-1.5 text-xs sm:text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 rounded-lg transition-colors flex items-center gap-1.5"
+              className="px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 rounded-lg transition-colors"
             >
-              <Settings className="h-3.5 w-3.5 text-slate-400" />
               Settings
             </Link>
 
             {currentUser ? (
               <div className="flex items-center gap-2 pl-2 border-l border-slate-800">
                 <span className="text-xs text-slate-400 hidden md:inline font-mono">
-                  {currentUser.email} ({currentUser.role})
+                  {currentUser.email}
                 </span>
                 <button
                   onClick={handleSignOut}
-                  className="px-3 py-1.5 text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 rounded-lg transition-colors flex items-center gap-1"
+                  className="px-2.5 py-1.5 text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 rounded-lg transition-colors flex items-center gap-1"
                 >
                   <LogOut className="h-3.5 w-3.5" />
                   Sign Out
@@ -213,7 +403,7 @@ export default function LandingPage() {
                   href="/register"
                   className="px-3.5 py-1.5 text-xs font-bold bg-cyan-500 hover:bg-cyan-400 text-slate-950 rounded-lg shadow-md shadow-cyan-500/20 transition-all"
                 >
-                  Register
+                  Register Org
                 </Link>
               </div>
             )}
@@ -221,41 +411,37 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {/* --------------------------------------------------------------------- */}
-      {/* 2. DYNAMIC STATE TRACKER BAR (LIVE TELEMETRY) */}
-      {/* --------------------------------------------------------------------- */}
-      <section className="bg-slate-900/90 border-b border-slate-800/60 py-2.5 px-4 sm:px-8 text-xs">
+      {/* ------------------------------------------------------------------- */}
+      {/* 4. LIVE TELEMETRY STRIP */}
+      {/* ------------------------------------------------------------------- */}
+      <section className="bg-slate-950/90 border-b border-slate-800/60 py-2.5 px-4 sm:px-8 text-xs">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-6 flex-wrap">
-            {/* Backend Health Status */}
             <div className="flex items-center gap-2">
               <span className={`inline-block w-2 h-2 rounded-full ${health ? 'bg-emerald-400 animate-pulse' : 'bg-cyan-400 animate-pulse'}`} />
-              <span className="text-slate-400">Backend Router:</span>
+              <span className="text-slate-400">Worker Matrix Engine:</span>
               <span className="font-semibold text-slate-200">
                 {loadingHealth ? 'Probing...' : health?.service ? 'Online (HTTP 200)' : 'Connected'}
               </span>
             </div>
 
-            {/* Database & RLS Pool Tracker */}
             <div className="flex items-center gap-2">
               <Database className="w-3.5 h-3.5 text-cyan-400" />
               <span className="text-slate-400">PostgreSQL RLS:</span>
-              <span className="font-mono text-cyan-400 font-semibold">Active & Isolated</span>
+              <span className="font-mono text-cyan-400 font-semibold">Tenant Sandboxed</span>
             </div>
 
-            {/* SP-API Pipeline */}
-            <div className="hidden lg:flex items-center gap-2">
+            <div className="hidden md:flex items-center gap-2">
               <Store className="w-3.5 h-3.5 text-emerald-400" />
               <span className="text-slate-400">Amazon SP-API:</span>
-              <span className="text-slate-200 font-medium">LWA OAuth Ready</span>
+              <span className="text-slate-200 font-medium">LWA Ready</span>
             </div>
           </div>
 
-          {/* Dynamic ASIN Telemetry Counter */}
           <div className="flex items-center gap-2 text-slate-400 font-mono text-[11px]">
             <Activity className="w-3.5 h-3.5 text-cyan-400" />
             <span>Guarded ASINs:</span>
-            <span className="text-white font-bold">{tickerCount.toLocaleString()}</span>
+            <span className="text-white font-bold">{guardedAsinCount.toLocaleString()}</span>
             <span className="text-emerald-400 text-[10px] bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
               100% MAP Guarded
             </span>
@@ -263,60 +449,89 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* --------------------------------------------------------------------- */}
-      {/* 3. HERO SECTION */}
-      {/* --------------------------------------------------------------------- */}
-      <section className="relative overflow-hidden pt-12 pb-16 lg:pt-20 lg:pb-24 border-b border-slate-800/80">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-cyan-500/10 blur-[120px] rounded-full pointer-events-none" />
+      {/* ------------------------------------------------------------------- */}
+      {/* 5. HERO SECTION WITH 3D CANVAS PERSPECTIVE PROJECTION MATRIX */}
+      {/* ------------------------------------------------------------------- */}
+      <section className="relative overflow-hidden pt-12 pb-20 lg:pt-20 lg:pb-28 border-b border-slate-800/80">
+        {/* HTML5 Canvas Background */}
+        <div className="absolute inset-0 z-0 pointer-events-none opacity-65">
+          <canvas ref={canvasRef} className="w-full h-full" />
+        </div>
+
+        {/* Ambient Gradient Glows */}
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-gradient-to-tr from-cyan-500/15 via-blue-600/15 to-purple-600/10 rounded-full blur-[140px] pointer-events-none" />
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center max-w-3xl mx-auto space-y-6">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shadow-sm">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-panel border border-cyan-500/30 text-xs font-semibold text-cyan-400 cyan-glow">
               <Sparkles className="h-3.5 w-3.5" />
               Autonomous Wholesale Sourcing & MAP Brand Defense
             </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight">
+            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white leading-[1.1]">
               Bridge Wholesale Capital with{' '}
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400">
+              <span className="gradient-text">
                 Guaranteed Brand Defense
               </span>
             </h1>
 
-            <p className="text-sm sm:text-base text-slate-400 leading-relaxed max-w-2xl mx-auto">
+            <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-2xl mx-auto">
               DistributionBridge unifies Amazon Selling Partner API analytics, tenant-isolated capital allocation,
               and 24/7 autonomous MAP price defense across US & EU marketplaces.
             </p>
 
-            <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            {/* 4-Step Access Action CTAs */}
+            <div className="flex flex-wrap items-center justify-center gap-3 pt-4">
               <Link
-                href="/seller"
-                className="px-6 py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-cyan-500/20 transition-all"
+                href="/register"
+                className="px-7 py-3.5 rounded-2xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs sm:text-sm flex items-center gap-2 shadow-xl cyan-glow transition-all"
               >
-                Launch Seller Dashboard
+                1. Register Organization & Sign In
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
-                href="/brand"
-                className="px-6 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 font-bold text-xs sm:text-sm flex items-center gap-2 transition-all"
+                href="/register"
+                className="px-6 py-3.5 rounded-2xl bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-800 font-bold text-xs sm:text-sm flex items-center gap-2 transition-all"
               >
-                <ShieldCheck className="h-4 w-4 text-cyan-400" />
-                Brand Defense Portal
+                <Store className="h-4 w-4 text-emerald-400" />
+                2. Connect Amazon SP-API
               </Link>
               <Link
-                href="/register"
-                className="px-5 py-3 rounded-xl bg-slate-950 hover:bg-slate-900 text-slate-300 border border-slate-800/80 font-medium text-xs sm:text-sm transition-all"
+                href="/saas"
+                className="px-5 py-3.5 rounded-2xl bg-slate-950/80 hover:bg-slate-900 text-slate-300 border border-slate-800 font-medium text-xs sm:text-sm transition-all flex items-center gap-1.5"
               >
-                Register Organization
+                <Cpu className="h-4 w-4 text-cyan-400" />
+                SaaS Bento Console
               </Link>
+            </div>
+
+            {/* 4-Step Progress Funnel Visual */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl mx-auto pt-8 text-left">
+              {[
+                { step: 'Step 1', title: 'Explore & Model', desc: 'Simulate ROI & Yields' },
+                { step: 'Step 2', title: 'Register / Sign In', desc: 'Enterprise Credentials' },
+                { step: 'Step 3', title: 'Integration', desc: 'Link SP-API / LWA' },
+                { step: 'Step 4', title: 'Full Access', desc: 'Unlocked Workspace' }
+              ].map((item, idx) => (
+                <Link
+                  key={idx}
+                  href={idx === 0 ? '/' : idx === 3 ? '/seller' : '/register'}
+                  className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-cyan-500/50 transition-all backdrop-blur-md"
+                >
+                  <span className="text-[10px] font-mono text-cyan-400 font-bold uppercase">{item.step}</span>
+                  <p className="text-xs font-bold text-white mt-0.5">{item.title}</p>
+                  <p className="text-[11px] text-slate-400">{item.desc}</p>
+                </Link>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
-      {/* --------------------------------------------------------------------- */}
-      {/* 4. INTERACTIVE SLIDER MATH HOOKS & SIMULATORS */}
-      {/* --------------------------------------------------------------------- */}
-      <section className="py-16 bg-slate-950 border-b border-slate-800/80">
+      {/* ------------------------------------------------------------------- */}
+      {/* 6. STATE-BOUND RANGE SLIDERS & MATH SIMULATORS */}
+      {/* ------------------------------------------------------------------- */}
+      <section className="py-16 bg-[#070b14] border-b border-slate-800/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-12 space-y-3">
             <span className="px-3 py-1 rounded-full text-xs font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
@@ -332,7 +547,7 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* SIMULATOR 1: Wholesale Capital & Margin Yield Simulator */}
-            <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl backdrop-blur-sm">
+            <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl backdrop-blur-md">
               <div className="flex items-center justify-between border-b border-slate-800 pb-4">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20">
@@ -446,7 +661,7 @@ export default function LandingPage() {
             </div>
 
             {/* SIMULATOR 2: Brand Protection & MAP Recovery Calculator */}
-            <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl backdrop-blur-sm">
+            <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl backdrop-blur-md">
               <div className="flex items-center justify-between border-b border-slate-800 pb-4">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center border border-cyan-500/20">
@@ -564,68 +779,10 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* --------------------------------------------------------------------- */}
-      {/* 5. CORE PLATFORM PILLARS (DEEP DIVE) */}
-      {/* --------------------------------------------------------------------- */}
-      <section className="py-16 border-b border-slate-800/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-10 space-y-2">
-            <h2 className="text-2xl sm:text-3xl font-bold text-white">Built for High-Velocity Amazon Commerce</h2>
-            <p className="text-slate-400 text-xs sm:text-sm">
-              Explore our native engines engineered for wholesale sourcing, 3PL logistics, and database sandboxing.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="p-6 rounded-3xl bg-slate-900/60 border border-slate-800 hover:border-slate-700 transition-all space-y-4">
-              <div className="h-10 w-10 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center border border-cyan-500/20">
-                <Store className="h-5 w-5" />
-              </div>
-              <h3 className="text-lg font-bold text-white">Sourcing Triage Engine</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Evaluates wholesale supplier product manifests against live Amazon SP-API BuyBox price histories,
-                calculating deal scores, net ROI, and FBA fee deductions in seconds.
-              </p>
-              <Link href="/seller" className="inline-flex items-center gap-1.5 text-xs text-cyan-400 font-semibold hover:underline">
-                Explore Seller Tools <ChevronRight className="h-3.5 w-3.5" />
-              </Link>
-            </div>
-
-            <div className="p-6 rounded-3xl bg-slate-900/60 border border-slate-800 hover:border-slate-700 transition-all space-y-4">
-              <div className="h-10 w-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center border border-blue-500/20">
-                <Truck className="h-5 w-5" />
-              </div>
-              <h3 className="text-lg font-bold text-white">3PL Logistics & FBA Prep</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Connects directly to certified 3PL hubs across Chicago (MDW2), Dallas (DFW6), and California (ONT8)
-                for automated pallet receiving, polybagging, and Amazon FC routing.
-              </p>
-              <Link href="/settings" className="inline-flex items-center gap-1.5 text-xs text-blue-400 font-semibold hover:underline">
-                Configure Logistics <ChevronRight className="h-3.5 w-3.5" />
-              </Link>
-            </div>
-
-            <div className="p-6 rounded-3xl bg-slate-900/60 border border-slate-800 hover:border-slate-700 transition-all space-y-4">
-              <div className="h-10 w-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center border border-indigo-500/20">
-                <Database className="h-5 w-5" />
-              </div>
-              <h3 className="text-lg font-bold text-white">PostgreSQL Row-Level Security</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Ensures 100% cryptographic isolation between seller catalogs, investor allocation portfolios, and
-                proprietary pricing models via Hyperdrive pooled connections.
-              </p>
-              <Link href="/register" className="inline-flex items-center gap-1.5 text-xs text-indigo-400 font-semibold hover:underline">
-                Register & Verify <ChevronRight className="h-3.5 w-3.5" />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* --------------------------------------------------------------------- */}
-      {/* 6. FOOTER */}
-      {/* --------------------------------------------------------------------- */}
-      <footer className="py-12 bg-slate-950 text-slate-500 text-xs">
+      {/* ------------------------------------------------------------------- */}
+      {/* 7. FOOTER */}
+      {/* ------------------------------------------------------------------- */}
+      <footer className="py-12 bg-[#070b14] text-slate-500 text-xs border-t border-slate-800/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <span className="font-bold text-slate-300">DistributionBridge Enterprise</span>
@@ -635,6 +792,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-4 text-slate-400">
             <Link href="/seller" className="hover:text-white transition-colors">Seller</Link>
             <Link href="/brand" className="hover:text-white transition-colors">Brand</Link>
+            <Link href="/saas" className="hover:text-white transition-colors">SaaS Bento</Link>
             <Link href="/settings" className="hover:text-white transition-colors">Settings</Link>
             <Link href="/register" className="hover:text-white transition-colors">Register</Link>
           </div>
