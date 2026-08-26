@@ -2,49 +2,35 @@ name = "distributionbridge-sales-backend"
 main = "src/index.js"
 compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
+workers_dev = true
 
-# Public Environment Variables
+# ==============================================================================
+# CUSTOM DOMAIN & PRODUCTION ROUTING
+# ==============================================================================
+routes = [
+  { pattern = "sales-backend.distributionbridge.com", custom_domain = true }
+]
+
+# ==============================================================================
+# STRICT PRODUCTION OBSERVABILITY & LOGGING
+# ==============================================================================
+[observability]
+enabled = true
+head_sampling_rate = 1.0
+
+# ==============================================================================
+# PUBLIC ENVIRONMENT VARIABLES
+# ==============================================================================
 [vars]
 ENVIRONMENT = "production"
 FRONTEND_URL = "https://distributionbridge.com"
 AMAZON_AUTH_BASE_URL = "https://sellercentral.amazon.com/apps/authorize/consent"
 AMAZON_TOKEN_URL = "https://api.amazon.com/auth/o2/token"
 LWA_REDIRECT_URI = "https://sales-backend.distributionbridge.com/api/auth/amazon/callback"
-DEFAULT_MARKETPLACE_ID = "ATVPDKIKX0DER" # US Marketplace
+DEFAULT_MARKETPLACE_ID = "ATVPDKIKX0DER" # US Amazon Marketplace
 
-# Scheduled Cron Triggers for Background Monthly Sales Ingestion
-# Runs daily at 02:00 UTC to sync active seller order metrics from SP-API
+# ==============================================================================
+# SCHEDULED CRON TRIGGERS (DAILY AUTOMATED SYNC)
+# ==============================================================================
 [triggers]
 crons = ["0 2 * * *"]
-
-# Cloudflare Hyperdrive PostgreSQL Connection Acceleration (Optional but Recommended)
-# To create: npx wrangler hyperdrive create distributionbridge-pg --connection-string="postgres://..."
-# [[hyperdrive]]
-# binding = "HYPERDRIVE"
-# id = "<YOUR_HYPERDRIVE_CONFIG_ID>"
-
-# ==============================================================================
-# SECRETS CONFIGURATION INSTRUCTIONS
-# ==============================================================================
-# The following secrets MUST be set using `npx wrangler secret put <KEY>`:
-#
-# 1. LWA_CLIENT_ID:
-#    The Login with Amazon (LWA) Client Identifier from Amazon Developer Console.
-#    Command: npx wrangler secret put LWA_CLIENT_ID
-#
-# 2. LWA_CLIENT_SECRET:
-#    The Login with Amazon (LWA) Client Secret.
-#    Command: npx wrangler secret put LWA_CLIENT_SECRET
-#
-# 3. AMAZON_APP_ID:
-#    The Amazon Selling Partner App ID (e.g., amzn1.sp.solution.xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx).
-#    Command: npx wrangler secret put AMAZON_APP_ID
-#
-# 4. DATABASE_URL:
-#    PostgreSQL Connection String (e.g., postgres://user:password@hostname:5432/dbname?sslmode=require).
-#    Command: npx wrangler secret put DATABASE_URL
-#
-# 5. CSRF_SECRET:
-#    High-entropy random key for signing OAuth state payloads and preventing CSRF attacks.
-#    Command: npx wrangler secret put CSRF_SECRET
-# ==============================================================================
