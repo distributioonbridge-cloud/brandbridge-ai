@@ -236,6 +236,15 @@ export default function LoginPage() {
                   </>
                 )}
               </button>
+
+              <div className="text-center mt-4">
+                <Link
+                  href="/register"
+                  className="text-xs text-indigo-400 hover:text-indigo-300 font-medium transition-colors"
+                >
+                  Need an enterprise account? Onboard your organization &rarr;
+                </Link>
+              </div>
             </form>
 
             {/* Quick Demo Pre-fills */}

@@ -17,7 +17,8 @@ import {
   Layers,
   Sparkles,
   ExternalLink,
-  UserCheck
+  UserCheck,
+  Settings
 } from 'lucide-react';
 import { api, BackendHealthResponse, getCurrentUser, logout } from '../services/api';
 
@@ -70,18 +71,25 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <nav className="flex items-center gap-2 sm:gap-4">
+          <nav className="flex items-center gap-2 sm:gap-3">
             <Link
               href="/seller"
-              className="px-3.5 py-1.5 text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 rounded-lg transition-colors"
+              className="px-3 py-1.5 text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 rounded-lg transition-colors"
             >
               Seller Dashboard
             </Link>
             <Link
               href="/brand"
-              className="px-3.5 py-1.5 text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 rounded-lg transition-colors"
+              className="px-3 py-1.5 text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 rounded-lg transition-colors"
             >
               Brand Manager
+            </Link>
+            <Link
+              href="/settings"
+              className="px-3 py-1.5 text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 rounded-lg transition-colors flex items-center gap-1.5"
+            >
+              <Settings className="h-4 w-4 text-slate-400" />
+              Settings
             </Link>
 
             {currentUser ? (
@@ -97,13 +105,21 @@ export default function LandingPage() {
                 </button>
               </div>
             ) : (
-              <Link
-                href="/login"
-                className="px-4 py-1.5 text-sm font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/20 transition-all flex items-center gap-1.5"
-              >
-                Sign In
-                <ArrowRight className="h-4 w-4" />
-              </Link>
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/register"
+                  className="px-3.5 py-1.5 text-sm font-medium text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 rounded-lg transition-colors hidden sm:inline-block border border-indigo-500/20"
+                >
+                  Register
+                </Link>
+                <Link
+                  href="/login"
+                  className="px-4 py-1.5 text-sm font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/20 transition-all flex items-center gap-1.5"
+                >
+                  Sign In
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
             )}
           </nav>
         </div>
