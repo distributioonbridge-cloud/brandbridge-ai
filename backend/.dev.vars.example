@@ -1,0 +1,18 @@
+# Example environment variables for local development (`wrangler dev`)
+# Copy this file to `.dev.vars` and fill in your actual credentials.
+# Do NOT commit `.dev.vars` to version control.
+
+# Login with Amazon (LWA) & Amazon SP-API App Credentials
+LWA_CLIENT_ID="amzn1.application-oa2-client.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+LWA_CLIENT_SECRET="amzn1.oa2-cs.v1.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+AMAZON_APP_ID="amzn1.sp.solution.xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+# Base URLs & Redirect
+LWA_REDIRECT_URI="http://localhost:8787/api/auth/amazon/callback"
+FRONTEND_URL="http://localhost:5173"
+
+# PostgreSQL Database Connection
+DATABASE_URL="postgres://postgres:password@localhost:5432/distributionbridge?sslmode=disable"
+
+# Secret key for HMAC signing OAuth state parameter (CSRF protection)
+CSRF_SECRET="change-this-to-a-very-secure-random-secret-key-minimum-32-chars"

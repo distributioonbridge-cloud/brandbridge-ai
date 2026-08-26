@@ -1,0 +1,139 @@
+/**
+ * Automated Test Suite for DistributionBridge Monthly Sales Backend
+ */
+
+import { generateSignedState, verifySignedState } from '../src/utils/crypto.js';
+import { buildAmazonAuthUrl } from '../src/services/lwa.js';
+import { getCorsHeaders, jsonResponse } from '../src/utils/cors.js';
+import { getSpApiEndpoint, buildMonthInterval, parseOrderMetricsForStorage } from '../src/amazon_spapi.js';
+
+let passed = 0;
+let failed = 0;
+
+function assert(condition, message) {
+  if (condition) {
+    console.log(`  ✅ PASS: ${message}`);
+    passed++;
+  } else {
+    console.error(`  ❌ FAIL: ${message}`);
+    failed++;
+  }
+}
+
+async function runTests() {
+  console.log('\n=== RUNNING DISTRIBUTIONBRIDGE BACKEND TEST SUITE ===\n');
+
+  const mockEnv = {
+    AMAZON_APP_ID: 'amzn1.sp.solution.test-app-id-12345',
+    LWA_CLIENT_ID: 'amzn1.application-oa2-client.test-client-id-67890',
+    LWA_CLIENT_SECRET: 'test-client-secret-xyz',
+    LWA_REDIRECT_URI: 'https://distributionbridge.com/api/auth/amazon/callback',
+    AMAZON_AUTH_BASE_URL: 'https://sellercentral.amazon.com/apps/authorize/consent',
+    FRONTEND_URL: 'https://distributionbridge.com',
+    CSRF_SECRET: 'super-secure-test-secret-key-32-chars-minimum',
+  };
+
+  // Test 1: Crypto State Generation & Verification
+  console.log('1. Testing Crypto HMAC State & CSRF Protection:');
+  const payload = { userId: 'user-abc-123', redirectBack: '/brand/dashboard', mode: 'spapi' };
+  const state = await generateSignedState(payload, mockEnv.CSRF_SECRET, 900);
+  assert(typeof state === 'string' && state.includes('.'), 'State generated with format payload.signature');
+
+  const verification = await verifySignedState(state, mockEnv.CSRF_SECRET);
+  assert(verification.valid === true, 'Valid signed state verified successfully');
+  assert(verification.payload.userId === 'user-abc-123', 'Payload userId preserved correctly');
+  assert(verification.payload.redirectBack === '/brand/dashboard', 'Payload redirectBack preserved');
+
+  // Test 2: Tampered State Detection
+  console.log('\n2. Testing Tampered State Detection:');
+  const tamperedState = state.slice(0, -5) + 'XXXXX';
+  const tamperedVerification = await verifySignedState(tamperedState, mockEnv.CSRF_SECRET);
+  assert(tamperedVerification.valid === false, 'Tampered state signature rejected');
+
+  // Test 3: Expired State Detection
+  console.log('\n3. Testing Expired State Detection:');
+  const expiredState = await generateSignedState(payload, mockEnv.CSRF_SECRET, -10); // Expired 10s ago
+  const expiredVerification = await verifySignedState(expiredState, mockEnv.CSRF_SECRET);
+  assert(expiredVerification.valid === false && expiredVerification.error.includes('expired'), 'Expired state correctly rejected');
+
+  // Test 4: Amazon SP-API Authorization URL Construction
+  console.log('\n4. Testing Amazon SP-API Authorization URL Builder:');
+  const authUrl = buildAmazonAuthUrl(mockEnv, { state, version: 'beta', mode: 'spapi' });
+  const parsedUrl = new URL(authUrl);
+  assert(parsedUrl.origin === 'https://sellercentral.amazon.com', 'URL target is sellercentral.amazon.com');
+  assert(parsedUrl.pathname === '/apps/authorize/consent', 'URL path is /apps/authorize/consent');
+  assert(parsedUrl.searchParams.get('application_id') === mockEnv.AMAZON_APP_ID, 'application_id matches AMAZON_APP_ID');
+  assert(parsedUrl.searchParams.get('state') === state, 'state parameter matches generated state');
+  assert(parsedUrl.searchParams.get('version') === 'beta', 'version parameter matches beta');
+
+  // Test 5: Amazon Direct LWA Authorization URL Construction
+  console.log('\n5. Testing Amazon Direct LWA URL Builder:');
+  const directLwaUrl = buildAmazonAuthUrl(mockEnv, { state, mode: 'lwa_direct' });
+  const parsedLwaUrl = new URL(directLwaUrl);
+  assert(parsedLwaUrl.origin === 'https://www.amazon.com', 'LWA target is www.amazon.com');
+  assert(parsedLwaUrl.searchParams.get('client_id') === mockEnv.LWA_CLIENT_ID, 'client_id matches LWA_CLIENT_ID');
+  assert(parsedLwaUrl.searchParams.get('response_type') === 'code', 'response_type is code');
+
+  // Test 6: CORS and JSON Response
+  console.log('\n6. Testing CORS Headers & JSON formatting:');
+  const req = new Request('http://localhost:8787/api/test', {
+    headers: { Origin: 'https://distributionbridge.com' },
+  });
+  const cors = getCorsHeaders(mockEnv, req);
+  assert(cors['Access-Control-Allow-Origin'] === 'https://distributionbridge.com', 'Origin reflected in CORS header');
+  assert(cors['Access-Control-Allow-Methods'].includes('GET'), 'CORS methods include GET');
+
+  const res = jsonResponse({ status: 'ok' }, 200, {}, mockEnv, req);
+  assert(res.status === 200, 'Status code is 200');
+  assert(res.headers.get('Content-Type') === 'application/json', 'Content-Type is application/json');
+
+  // Test 7: SP-API Regional Endpoints & Month Interval Builder
+  console.log('\n7. Testing SP-API Region Resolution & Interval Builder:');
+  assert(getSpApiEndpoint('ATVPDKIKX0DER') === 'https://sellingpartnerapi-na.amazon.com', 'US marketplace resolves to NA endpoint');
+  assert(getSpApiEndpoint('A1F83G8C2ARO7P') === 'https://sellingpartnerapi-eu.amazon.com', 'UK marketplace resolves to EU endpoint');
+  assert(getSpApiEndpoint('A1VC38T7YXB528') === 'https://sellingpartnerapi-fe.amazon.com', 'JP marketplace resolves to FE endpoint');
+
+  const interval = buildMonthInterval(2026, 8);
+  assert(interval.startsWith('2026-08-01') && interval.includes('2026-08-31'), 'August 2026 interval covers full month');
+
+  // Test 8: Parsing Order Metrics for PostgreSQL Storage
+  console.log('\n8. Testing SP-API Order Metrics Parser for PostgreSQL Schema:');
+  const sampleSpApiPayload = {
+    payload: [
+      {
+        interval: interval,
+        unitCount: 5000,
+        orderItemCount: 4500,
+        orderCount: 4200,
+        averageUnitPrice: { amount: 35.50, currencyCode: 'USD' },
+        totalSales: { amount: 177500.00, currencyCode: 'USD' },
+      },
+    ],
+  };
+
+  const parsedReport = parseOrderMetricsForStorage(sampleSpApiPayload, {
+    sellingPartnerId: 'SELLER_TEST_001',
+    marketplaceId: 'ATVPDKIKX0DER',
+    year: 2026,
+    month: 8,
+  });
+
+  assert(parsedReport.sellingPartnerId === 'SELLER_TEST_001', 'sellingPartnerId mapped');
+  assert(parsedReport.totalOrderedUnits === 5000, 'totalOrderedUnits parsed correctly (5000)');
+  assert(parsedReport.totalSalesAmount === 177500.00, 'totalSalesAmount parsed correctly (177500.00)');
+  assert(parsedReport.averageSellingPrice === 35.50, 'averageSellingPrice parsed correctly');
+  assert(parsedReport.fbaUnitsShipped === 4500, 'FBA units computed (90% = 4500)');
+  assert(parsedReport.fbmUnitsShipped === 500, 'FBM units computed (10% = 500)');
+  assert(Array.isArray(parsedReport.asinBreakdown) && parsedReport.asinBreakdown.length > 0, 'ASIN breakdown present');
+
+  console.log(`\n=== RESULTS: ${passed} PASSED, ${failed} FAILED ===\n`);
+
+  if (failed > 0) {
+    process.exit(1);
+  }
+}
+
+runTests().catch((err) => {
+  console.error('Test runner error:', err);
+  process.exit(1);
+});
