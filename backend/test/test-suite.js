@@ -10,6 +10,7 @@ import { evaluateSourcingDeal } from '../src/routes/triage.js';
 import { calculateLogisticsQuote } from '../src/routes/logistics.js';
 import { handlePortal } from '../src/routes/portal.js';
 import { hashPassword, verifyPassword, serializeAuthToken, deserializeAuthToken } from '../src/login.js';
+import { authLogout } from '../src/logout.js';
 import { handleLogin } from '../src/routes/login.js';
 
 let passed = 0;
@@ -218,6 +219,19 @@ async function runTests() {
   });
   const badLoginRes = await handleLogin(badLoginReq, mockEnv);
   assert(badLoginRes.status === 401, 'Invalid password returns HTTP 401 Unauthorized');
+
+  // Test 13: Secure Logout Router & Cookie Clearance
+  console.log('\n13. Testing Secure Logout Router & Cookie Clearance:');
+  const logoutReq = new Request('http://localhost:8787/api/auth/logout', {
+    method: 'POST',
+    headers: { Origin: 'http://localhost:3000' },
+  });
+  const logoutRes = await authLogout.handleLogout(logoutReq, mockEnv);
+  assert(logoutRes.status === 200, 'POST /api/auth/logout returns HTTP 200 OK');
+  const logoutData = await logoutRes.json();
+  assert(logoutData.success === true, 'Logout response indicates success');
+  const setCookie = logoutRes.headers.get('Set-Cookie') || '';
+  assert(setCookie.includes('Expires=Thu, 01 Jan 1970'), 'Cookie clearance header with epoch expiration returned');
 
   console.log(`\n=== RESULTS: ${passed} PASSED, ${failed} FAILED ===\n`);
 

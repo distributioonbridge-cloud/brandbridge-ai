@@ -18,6 +18,7 @@ import { handleSourcingTriage } from './routes/triage.js';
 import { handleLogistics } from './routes/logistics.js';
 import { handlePortal } from './routes/portal.js';
 import { handleLogin } from './routes/login.js';
+import { authLogout } from './logout.js';
 import { syncAllActiveSellersMonthlySales } from './amazon_spapi.js';
 import { handleOptions, jsonResponse, withCors } from './utils/cors.js';
 
@@ -90,10 +91,14 @@ export default {
       }
 
       // -----------------------------------------------------------------------
-      // 5. User Authentication & Login (/api/auth/login)
+      // 5. User Authentication & Session (Login / Logout)
       // -----------------------------------------------------------------------
       else if (path === '/api/auth/login' && method === 'POST') {
         response = await handleLogin(request, env);
+      }
+
+      else if (path === '/api/auth/logout' && (method === 'POST' || method === 'GET')) {
+        response = await authLogout.handleLogout(request, env);
       }
 
       // -----------------------------------------------------------------------
