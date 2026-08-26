@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "test:integration": "node tests/integration-audit.spec.js",
-    "lint": "next lint"
+    "lint": "next lint",
+    "deploy": "npx wrangler deploy -c worker-wrangler.json && npx wrangler pages deploy dist --project-name distributionbridge --branch main"
   },
   "dependencies": {
     "clsx": "^2.1.1",
