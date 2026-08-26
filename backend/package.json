@@ -11,6 +11,7 @@
     "test:sync": "node src/test_sync.js",
     "test:rls": "node src/test_rls.js",
     "test:auth": "vitest run src/auth-suite.test.js",
+    "optimize:db": "node src/optimize_db.js",
     "tail": "wrangler tail"
   },
   "keywords": [

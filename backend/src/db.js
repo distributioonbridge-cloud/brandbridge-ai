@@ -159,6 +159,44 @@ export async function runRlsMigration(env) {
 }
 
 /**
+ * Executes Database Index Optimizations & RLS Covering Structures
+ */
+export async function runIndexOptimizations(env) {
+  const sql = getDb(env);
+  return await sql.begin(async (tx) => {
+    // 1. Investor & User Lookups
+    await tx`CREATE INDEX IF NOT EXISTS idx_investors_investor_code_lower ON investors (LOWER(investor_code))`;
+    await tx`CREATE INDEX IF NOT EXISTS idx_investors_email_lower ON investors (LOWER(contact_email))`;
+    await tx`CREATE INDEX IF NOT EXISTS idx_investors_status_active ON investors (status) WHERE status = 'active'`;
+
+    // 2. RLS Covering Composite Indexes for Allocations
+    await tx`CREATE INDEX IF NOT EXISTS idx_allocations_investor_rls_covering ON allocations (investor_id, inventory_id, status) INCLUDE (allocated_units, committed_capital, target_roi_percent, created_at)`;
+    await tx`CREATE INDEX IF NOT EXISTS idx_allocations_inventory_fk ON allocations (inventory_id)`;
+    await tx`CREATE INDEX IF NOT EXISTS idx_allocations_status ON allocations (status)`;
+
+    // 3. RLS Covering Composite Indexes for Inventory Lots
+    await tx`CREATE INDEX IF NOT EXISTS idx_inventory_id_status_covering ON inventory (id, status) INCLUDE (sku, asin, lot_number, warehouse_id, units_total, units_allocated, unit_cost, currency)`;
+    await tx`CREATE INDEX IF NOT EXISTS idx_inventory_asin ON inventory (asin)`;
+    await tx`CREATE INDEX IF NOT EXISTS idx_inventory_sku ON inventory (sku)`;
+    await tx`CREATE INDEX IF NOT EXISTS idx_inventory_warehouse ON inventory (warehouse_id)`;
+
+    // 4. Investor Portfolios Fast Lookup
+    await tx`CREATE UNIQUE INDEX IF NOT EXISTS idx_investor_portfolios_investor_id ON investor_portfolios (investor_id) INCLUDE (total_invested_capital, current_asset_valuation, realized_pnl, active_deals_count, portfolio_status)`;
+
+    // 5. Amazon Sellers & LWA OAuth Token Indexes
+    await tx`CREATE INDEX IF NOT EXISTS idx_amazon_sellers_partner_id ON amazon_sellers (selling_partner_id)`;
+    await tx`CREATE INDEX IF NOT EXISTS idx_amazon_sellers_active_sync ON amazon_sellers (is_active, last_sync_at ASC NULLS FIRST) WHERE is_active = TRUE AND auth_status = 'connected'`;
+    await tx`CREATE INDEX IF NOT EXISTS idx_amazon_sellers_user_id ON amazon_sellers (user_id) WHERE user_id IS NOT NULL`;
+
+    // 6. Monthly Sales Reports Partitioned Indexing & Time Series Lookups
+    await tx`CREATE INDEX IF NOT EXISTS idx_monthly_sales_seller_time ON monthly_sales_reports (selling_partner_id, marketplace_id, year DESC, month DESC)`;
+    await tx`CREATE INDEX IF NOT EXISTS idx_monthly_sales_status ON monthly_sales_reports (report_status)`;
+
+    return { success: true, message: 'Database indexing and RLS covering structures successfully created.' };
+  });
+}
+
+/**
  * Fetches an investor portfolio wrapped inside a transaction that sets `app.current_investor_id` session parameter
  * Enforces strict PostgreSQL Row-Level Security (RLS) isolation.
  *
