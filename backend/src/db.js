@@ -63,6 +63,27 @@ export async function testDbConnection(env) {
 }
 
 /**
+ * Executes a callback within a transaction where `app.current_investor_id` is set
+ * Ensures all nested queries strictly obey PostgreSQL Row-Level Security (RLS) policies.
+ *
+ * @param {object} env - Cloudflare Worker environment
+ * @param {string} investorId - Validated Investor UUID
+ * @param {Function} queryCallback - Async function receiving transaction client `(tx) => Promise<T>`
+ * @returns {Promise<T>} Result of the query callback
+ */
+export async function runAuthenticatedTransaction(env, investorId, queryCallback) {
+  const sql = getDb(env);
+
+  return await sql.begin(async (tx) => {
+    // 1. Set local session parameter for RLS policy enforcement
+    await tx`SELECT set_config('app.current_investor_id', ${investorId}, true)`;
+
+    // 2. Execute caller query operations inside transaction-scoped RLS context
+    return await queryCallback(tx);
+  });
+}
+
+/**
  * Executes the PostgreSQL RLS Migration DDL
  */
 export async function runRlsMigration(env) {
@@ -146,14 +167,8 @@ export async function runRlsMigration(env) {
  * @returns {Promise<object>} Portfolio summary, active allocations, and isolated inventory lots
  */
 export async function getInvestorPortfolioWithRls(env, investorId) {
-  const sql = getDb(env);
-
-  // Wrap query inside transaction with session context
-  return await sql.begin(async (tx) => {
-    // 1. Set local session parameter for RLS evaluation in this transaction
-    await tx`SELECT set_config('app.current_investor_id', ${investorId}, true)`;
-
-    // 2. Query investor portfolio summary (protected by rls_investor_portfolio_isolation)
+  return await runAuthenticatedTransaction(env, investorId, async (tx) => {
+    // 1. Query investor portfolio summary (protected by rls_investor_portfolio_isolation)
     const [portfolio] = await tx`
       SELECT 
         p.*,
@@ -165,7 +180,7 @@ export async function getInvestorPortfolioWithRls(env, investorId) {
       WHERE p.investor_id = ${investorId}::UUID
     `;
 
-    // 3. Query capital allocations (protected by rls_allocations_isolation)
+    // 2. Query capital allocations (protected by rls_allocations_isolation)
     const allocations = await tx`
       SELECT 
         a.*,
@@ -205,12 +220,7 @@ export async function upsertInvestorAllocationWithRls(env, investorId, {
   committedCapital,
   targetRoiPercent = 25.00,
 }) {
-  const sql = getDb(env);
-
-  return await sql.begin(async (tx) => {
-    // Set RLS session context
-    await tx`SELECT set_config('app.current_investor_id', ${investorId}, true)`;
-
+  return await runAuthenticatedTransaction(env, investorId, async (tx) => {
     const [allocation] = await tx`
       INSERT INTO allocations (
         inventory_id,
