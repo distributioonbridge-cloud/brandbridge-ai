@@ -10,6 +10,7 @@
     "test": "node test/test-suite.js",
     "test:sync": "node src/test_sync.js",
     "test:rls": "node src/test_rls.js",
+    "test:auth": "vitest run src/auth-suite.test.js",
     "tail": "wrangler tail"
   },
   "keywords": [
@@ -27,6 +28,7 @@
     "postgres": "^3.4.4"
   },
   "devDependencies": {
+    "vitest": "^4.1.11",
     "wrangler": "^4.126.0"
   }
 }
