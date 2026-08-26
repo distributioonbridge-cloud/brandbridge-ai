@@ -244,11 +244,29 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
           >
             Pricing
           </button>
+          <button
+            onClick={() => setActiveTab('settings')}
+            className={`px-3 py-1.5 rounded-lg transition-colors ${
+              activeTab === 'settings' ? 'text-cyan-400 bg-slate-800/60' : 'text-slate-300 hover:text-white hover:bg-slate-800/40'
+            }`}
+          >
+            Settings
+          </button>
         </nav>
 
         {/* Right Section: Notifications, Billing Upgrade, User Profile */}
         <div className="flex items-center gap-3">
-          {/* Stripe Upgrade CTA Button */}
+          {/* Register & Upgrade CTA Buttons */}
+          <button
+            onClick={() => setActiveTab('register')}
+            className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs border transition-all ${
+              activeTab === 'register'
+                ? 'bg-cyan-500 text-slate-950 border-cyan-400 font-bold'
+                : 'bg-slate-800/60 hover:bg-slate-800 text-cyan-400 border-cyan-500/30'
+            }`}
+          >
+            Register
+          </button>
           <button
             onClick={() => openStripeModal('Brand Shield')}
             className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold text-xs cyan-glow transition-all shadow-md"

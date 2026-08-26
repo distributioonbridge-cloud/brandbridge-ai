@@ -17,6 +17,8 @@ import { DistributorPage } from './pages/DistributorPage';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { PricingPage } from './pages/PricingPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
+import { RegisterPage } from './pages/RegisterPage';
+import { SettingsPage } from './pages/SettingsPage';
 
 const AppContent: React.FC = () => {
   const { role } = useAuth();
@@ -46,6 +48,10 @@ const AppContent: React.FC = () => {
         return <PricingPage />;
       case 'analytics':
         return <AnalyticsPage />;
+      case 'register':
+        return <RegisterPage setActiveTab={setActiveTab} />;
+      case 'settings':
+        return <SettingsPage setActiveTab={setActiveTab} />;
       default:
         return <LandingPage setActiveTab={setActiveTab} />;
     }
