@@ -1,0 +1,19 @@
+{
+  "key": "registration_wizard_mobile_standard",
+  "route": "/register",
+  "routeName": "Registration Wizard",
+  "viewport": {
+    "name": "Mobile Standard",
+    "width": 375,
+    "height": 812,
+    "type": "mobile"
+  },
+  "capturedAt": "2026-08-26T20:01:23.268Z",
+  "status": "verified_golden",
+  "metrics": {
+    "layoutShiftScore": 0,
+    "horizontalOverflow": false,
+    "elementsAudited": 42,
+    "renderTimeMs": 13
+  }
+}

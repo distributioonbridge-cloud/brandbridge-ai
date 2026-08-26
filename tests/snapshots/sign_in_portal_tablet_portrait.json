@@ -1,0 +1,19 @@
+{
+  "key": "sign_in_portal_tablet_portrait",
+  "route": "/login",
+  "routeName": "Sign In Portal",
+  "viewport": {
+    "name": "Tablet Portrait",
+    "width": 768,
+    "height": 1024,
+    "type": "tablet"
+  },
+  "capturedAt": "2026-08-26T20:01:23.267Z",
+  "status": "verified_golden",
+  "metrics": {
+    "layoutShiftScore": 0,
+    "horizontalOverflow": false,
+    "elementsAudited": 49,
+    "renderTimeMs": 12
+  }
+}

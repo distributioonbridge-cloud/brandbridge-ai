@@ -1,0 +1,19 @@
+{
+  "key": "enterprise_settings_portal_tablet_portrait",
+  "route": "/settings",
+  "routeName": "Enterprise Settings Portal",
+  "viewport": {
+    "name": "Tablet Portrait",
+    "width": 768,
+    "height": 1024,
+    "type": "tablet"
+  },
+  "capturedAt": "2026-08-26T20:01:23.266Z",
+  "status": "verified_golden",
+  "metrics": {
+    "layoutShiftScore": 0,
+    "horizontalOverflow": false,
+    "elementsAudited": 45,
+    "renderTimeMs": 12
+  }
+}

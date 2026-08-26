@@ -1,0 +1,19 @@
+{
+  "key": "seller_sourcing_dashboard_mobile_standard",
+  "route": "/seller",
+  "routeName": "Seller Sourcing Dashboard",
+  "viewport": {
+    "name": "Mobile Standard",
+    "width": 375,
+    "height": 812,
+    "type": "mobile"
+  },
+  "capturedAt": "2026-08-26T20:01:23.269Z",
+  "status": "verified_golden",
+  "metrics": {
+    "layoutShiftScore": 0,
+    "horizontalOverflow": false,
+    "elementsAudited": 50,
+    "renderTimeMs": 17
+  }
+}

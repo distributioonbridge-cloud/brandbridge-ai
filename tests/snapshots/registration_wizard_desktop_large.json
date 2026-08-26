@@ -1,0 +1,19 @@
+{
+  "key": "registration_wizard_desktop_large",
+  "route": "/register",
+  "routeName": "Registration Wizard",
+  "viewport": {
+    "name": "Desktop Large",
+    "width": 1920,
+    "height": 1080,
+    "type": "desktop"
+  },
+  "capturedAt": "2026-08-26T20:01:23.252Z",
+  "status": "verified_golden",
+  "metrics": {
+    "layoutShiftScore": 0,
+    "horizontalOverflow": false,
+    "elementsAudited": 48,
+    "renderTimeMs": 12
+  }
+}

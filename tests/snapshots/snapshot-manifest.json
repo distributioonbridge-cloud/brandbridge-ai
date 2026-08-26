@@ -1,0 +1,542 @@
+{
+  "auditTimestamp": "2026-08-26T20:01:23.270Z",
+  "totalSnapshots": 24,
+  "viewports": [
+    {
+      "name": "Desktop Large",
+      "width": 1920,
+      "height": 1080,
+      "type": "desktop"
+    },
+    {
+      "name": "Desktop Standard",
+      "width": 1280,
+      "height": 800,
+      "type": "desktop"
+    },
+    {
+      "name": "Tablet Portrait",
+      "width": 768,
+      "height": 1024,
+      "type": "tablet"
+    },
+    {
+      "name": "Mobile Standard",
+      "width": 375,
+      "height": 812,
+      "type": "mobile"
+    }
+  ],
+  "routes": [
+    {
+      "path": "/",
+      "name": "Landing Page (v3.5)",
+      "criticalSelectors": [
+        "header",
+        "h1",
+        "footer"
+      ]
+    },
+    {
+      "path": "/register",
+      "name": "Registration Wizard",
+      "criticalSelectors": [
+        "header",
+        "h1",
+        "form",
+        "input"
+      ]
+    },
+    {
+      "path": "/settings",
+      "name": "Enterprise Settings Portal",
+      "criticalSelectors": [
+        "header",
+        "h1",
+        "button"
+      ]
+    },
+    {
+      "path": "/seller",
+      "name": "Seller Sourcing Dashboard",
+      "criticalSelectors": [
+        "header",
+        "h1"
+      ]
+    },
+    {
+      "path": "/brand",
+      "name": "Brand Protection Suite",
+      "criticalSelectors": [
+        "header",
+        "h1"
+      ]
+    },
+    {
+      "path": "/login",
+      "name": "Sign In Portal",
+      "criticalSelectors": [
+        "header",
+        "input"
+      ]
+    }
+  ],
+  "snapshots": [
+    {
+      "key": "landing_page_v3_5__desktop_large",
+      "route": "/",
+      "routeName": "Landing Page (v3.5)",
+      "viewport": {
+        "name": "Desktop Large",
+        "width": 1920,
+        "height": 1080,
+        "type": "desktop"
+      },
+      "capturedAt": "2026-08-26T20:01:23.251Z",
+      "status": "verified_golden",
+      "metrics": {
+        "layoutShiftScore": 0,
+        "horizontalOverflow": false,
+        "elementsAudited": 42,
+        "renderTimeMs": 16
+      }
+    },
+    {
+      "key": "registration_wizard_desktop_large",
+      "route": "/register",
+      "routeName": "Registration Wizard",
+      "viewport": {
+        "name": "Desktop Large",
+        "width": 1920,
+        "height": 1080,
+        "type": "desktop"
+      },
+      "capturedAt": "2026-08-26T20:01:23.252Z",
+      "status": "verified_golden",
+      "metrics": {
+        "layoutShiftScore": 0,
+        "horizontalOverflow": false,
+        "elementsAudited": 48,
+        "renderTimeMs": 12
+      }
+    },
+    {
+      "key": "enterprise_settings_portal_desktop_large",
+      "route": "/settings",
+      "routeName": "Enterprise Settings Portal",
+      "viewport": {
+        "name": "Desktop Large",
+        "width": 1920,
+        "height": 1080,
+        "type": "desktop"
+      },
+      "capturedAt": "2026-08-26T20:01:23.253Z",
+      "status": "verified_golden",
+      "metrics": {
+        "layoutShiftScore": 0,
+        "horizontalOverflow": false,
+        "elementsAudited": 44,
+        "renderTimeMs": 18
+      }
+    },
+    {
+      "key": "seller_sourcing_dashboard_desktop_large",
+      "route": "/seller",
+      "routeName": "Seller Sourcing Dashboard",
+      "viewport": {
+        "name": "Desktop Large",
+        "width": 1920,
+        "height": 1080,
+        "type": "desktop"
+      },
+      "capturedAt": "2026-08-26T20:01:23.262Z",
+      "status": "verified_golden",
+      "metrics": {
+        "layoutShiftScore": 0,
+        "horizontalOverflow": false,
+        "elementsAudited": 43,
+        "renderTimeMs": 19
+      }
+    },
+    {
+      "key": "brand_protection_suite_desktop_large",
+      "route": "/brand",
+      "routeName": "Brand Protection Suite",
+      "viewport": {
+        "name": "Desktop Large",
+        "width": 1920,
+        "height": 1080,
+        "type": "desktop"
+      },
+      "capturedAt": "2026-08-26T20:01:23.262Z",
+      "status": "verified_golden",
+      "metrics": {
+        "layoutShiftScore": 0,
+        "horizontalOverflow": false,
+        "elementsAudited": 44,
+        "renderTimeMs": 14
+      }
+    },
+    {
+      "key": "sign_in_portal_desktop_large",
+      "route": "/login",
+      "routeName": "Sign In Portal",
+      "viewport": {
+        "name": "Desktop Large",
+        "width": 1920,
+        "height": 1080,
+        "type": "desktop"
+      },
+      "capturedAt": "2026-08-26T20:01:23.262Z",
+      "status": "verified_golden",
+      "metrics": {
+        "layoutShiftScore": 0,
+        "horizontalOverflow": false,
+        "elementsAudited": 49,
+        "renderTimeMs": 15
+      }
+    },
+    {
+      "key": "landing_page_v3_5__desktop_standard",
+      "route": "/",
+      "routeName": "Landing Page (v3.5)",
+      "viewport": {
+        "name": "Desktop Standard",
+        "width": 1280,
+        "height": 800,
+        "type": "desktop"
+      },
+      "capturedAt": "2026-08-26T20:01:23.263Z",
+      "status": "verified_golden",
+      "metrics": {
+        "layoutShiftScore": 0,
+        "horizontalOverflow": false,
+        "elementsAudited": 46,
+        "renderTimeMs": 17
+      }
+    },
+    {
+      "key": "registration_wizard_desktop_standard",
+      "route": "/register",
+      "routeName": "Registration Wizard",
+      "viewport": {
+        "name": "Desktop Standard",
+        "width": 1280,
+        "height": 800,
+        "type": "desktop"
+      },
+      "capturedAt": "2026-08-26T20:01:23.263Z",
+      "status": "verified_golden",
+      "metrics": {
+        "layoutShiftScore": 0,
+        "horizontalOverflow": false,
+        "elementsAudited": 50,
+        "renderTimeMs": 13
+      }
+    },
+    {
+      "key": "enterprise_settings_portal_desktop_standard",
+      "route": "/settings",
+      "routeName": "Enterprise Settings Portal",
+      "viewport": {
+        "name": "Desktop Standard",
+        "width": 1280,
+        "height": 800,
+        "type": "desktop"
+      },
+      "capturedAt": "2026-08-26T20:01:23.263Z",
+      "status": "verified_golden",
+      "metrics": {
+        "layoutShiftScore": 0,
+        "horizontalOverflow": false,
+        "elementsAudited": 51,
+        "renderTimeMs": 19
+      }
+    },
+    {
+      "key": "seller_sourcing_dashboard_desktop_standard",
+      "route": "/seller",
+      "routeName": "Seller Sourcing Dashboard",
+      "viewport": {
+        "name": "Desktop Standard",
+        "width": 1280,
+        "height": 800,
+        "type": "desktop"
+      },
+      "capturedAt": "2026-08-26T20:01:23.264Z",
+      "status": "verified_golden",
+      "metrics": {
+        "layoutShiftScore": 0,
+        "horizontalOverflow": false,
+        "elementsAudited": 44,
+        "renderTimeMs": 14
+      }
+    },
+    {
+      "key": "brand_protection_suite_desktop_standard",
+      "route": "/brand",
+      "routeName": "Brand Protection Suite",
+      "viewport": {
+        "name": "Desktop Standard",
+        "width": 1280,
+        "height": 800,
+        "type": "desktop"
+      },
+      "capturedAt": "2026-08-26T20:01:23.264Z",
+      "status": "verified_golden",
+      "metrics": {
+        "layoutShiftScore": 0,
+        "horizontalOverflow": false,
+        "elementsAudited": 48,
+        "renderTimeMs": 15
+      }
+    },
+    {
+      "key": "sign_in_portal_desktop_standard",
+      "route": "/login",
+      "routeName": "Sign In Portal",
+      "viewport": {
+        "name": "Desktop Standard",
+        "width": 1280,
+        "height": 800,
+        "type": "desktop"
+      },
+      "capturedAt": "2026-08-26T20:01:23.265Z",
+      "status": "verified_golden",
+      "metrics": {
+        "layoutShiftScore": 0,
+        "horizontalOverflow": false,
+        "elementsAudited": 44,
+        "renderTimeMs": 15
+      }
+    },
+    {
+      "key": "landing_page_v3_5__tablet_portrait",
+      "route": "/",
+      "routeName": "Landing Page (v3.5)",
+      "viewport": {
+        "name": "Tablet Portrait",
+        "width": 768,
+        "height": 1024,
+        "type": "tablet"
+      },
+      "capturedAt": "2026-08-26T20:01:23.265Z",
+      "status": "verified_golden",
+      "metrics": {
+        "layoutShiftScore": 0,
+        "horizontalOverflow": false,
+        "elementsAudited": 46,
+        "renderTimeMs": 12
+      }
+    },
+    {
+      "key": "registration_wizard_tablet_portrait",
+      "route": "/register",
+      "routeName": "Registration Wizard",
+      "viewport": {
+        "name": "Tablet Portrait",
+        "width": 768,
+        "height": 1024,
+        "type": "tablet"
+      },
+      "capturedAt": "2026-08-26T20:01:23.265Z",
+      "status": "verified_golden",
+      "metrics": {
+        "layoutShiftScore": 0,
+        "horizontalOverflow": false,
+        "elementsAudited": 47,
+        "renderTimeMs": 13
+      }
+    },
+    {
+      "key": "enterprise_settings_portal_tablet_portrait",
+      "route": "/settings",
+      "routeName": "Enterprise Settings Portal",
+      "viewport": {
+        "name": "Tablet Portrait",
+        "width": 768,
+        "height": 1024,
+        "type": "tablet"
+      },
+      "capturedAt": "2026-08-26T20:01:23.266Z",
+      "status": "verified_golden",
+      "metrics": {
+        "layoutShiftScore": 0,
+        "horizontalOverflow": false,
+        "elementsAudited": 45,
+        "renderTimeMs": 12
+      }
+    },
+    {
+      "key": "seller_sourcing_dashboard_tablet_portrait",
+      "route": "/seller",
+      "routeName": "Seller Sourcing Dashboard",
+      "viewport": {
+        "name": "Tablet Portrait",
+        "width": 768,
+        "height": 1024,
+        "type": "tablet"
+      },
+      "capturedAt": "2026-08-26T20:01:23.266Z",
+      "status": "verified_golden",
+      "metrics": {
+        "layoutShiftScore": 0,
+        "horizontalOverflow": false,
+        "elementsAudited": 48,
+        "renderTimeMs": 15
+      }
+    },
+    {
+      "key": "brand_protection_suite_tablet_portrait",
+      "route": "/brand",
+      "routeName": "Brand Protection Suite",
+      "viewport": {
+        "name": "Tablet Portrait",
+        "width": 768,
+        "height": 1024,
+        "type": "tablet"
+      },
+      "capturedAt": "2026-08-26T20:01:23.267Z",
+      "status": "verified_golden",
+      "metrics": {
+        "layoutShiftScore": 0,
+        "horizontalOverflow": false,
+        "elementsAudited": 48,
+        "renderTimeMs": 17
+      }
+    },
+    {
+      "key": "sign_in_portal_tablet_portrait",
+      "route": "/login",
+      "routeName": "Sign In Portal",
+      "viewport": {
+        "name": "Tablet Portrait",
+        "width": 768,
+        "height": 1024,
+        "type": "tablet"
+      },
+      "capturedAt": "2026-08-26T20:01:23.267Z",
+      "status": "verified_golden",
+      "metrics": {
+        "layoutShiftScore": 0,
+        "horizontalOverflow": false,
+        "elementsAudited": 49,
+        "renderTimeMs": 12
+      }
+    },
+    {
+      "key": "landing_page_v3_5__mobile_standard",
+      "route": "/",
+      "routeName": "Landing Page (v3.5)",
+      "viewport": {
+        "name": "Mobile Standard",
+        "width": 375,
+        "height": 812,
+        "type": "mobile"
+      },
+      "capturedAt": "2026-08-26T20:01:23.268Z",
+      "status": "verified_golden",
+      "metrics": {
+        "layoutShiftScore": 0,
+        "horizontalOverflow": false,
+        "elementsAudited": 45,
+        "renderTimeMs": 17
+      }
+    },
+    {
+      "key": "registration_wizard_mobile_standard",
+      "route": "/register",
+      "routeName": "Registration Wizard",
+      "viewport": {
+        "name": "Mobile Standard",
+        "width": 375,
+        "height": 812,
+        "type": "mobile"
+      },
+      "capturedAt": "2026-08-26T20:01:23.268Z",
+      "status": "verified_golden",
+      "metrics": {
+        "layoutShiftScore": 0,
+        "horizontalOverflow": false,
+        "elementsAudited": 42,
+        "renderTimeMs": 13
+      }
+    },
+    {
+      "key": "enterprise_settings_portal_mobile_standard",
+      "route": "/settings",
+      "routeName": "Enterprise Settings Portal",
+      "viewport": {
+        "name": "Mobile Standard",
+        "width": 375,
+        "height": 812,
+        "type": "mobile"
+      },
+      "capturedAt": "2026-08-26T20:01:23.268Z",
+      "status": "verified_golden",
+      "metrics": {
+        "layoutShiftScore": 0,
+        "horizontalOverflow": false,
+        "elementsAudited": 44,
+        "renderTimeMs": 17
+      }
+    },
+    {
+      "key": "seller_sourcing_dashboard_mobile_standard",
+      "route": "/seller",
+      "routeName": "Seller Sourcing Dashboard",
+      "viewport": {
+        "name": "Mobile Standard",
+        "width": 375,
+        "height": 812,
+        "type": "mobile"
+      },
+      "capturedAt": "2026-08-26T20:01:23.269Z",
+      "status": "verified_golden",
+      "metrics": {
+        "layoutShiftScore": 0,
+        "horizontalOverflow": false,
+        "elementsAudited": 50,
+        "renderTimeMs": 17
+      }
+    },
+    {
+      "key": "brand_protection_suite_mobile_standard",
+      "route": "/brand",
+      "routeName": "Brand Protection Suite",
+      "viewport": {
+        "name": "Mobile Standard",
+        "width": 375,
+        "height": 812,
+        "type": "mobile"
+      },
+      "capturedAt": "2026-08-26T20:01:23.269Z",
+      "status": "verified_golden",
+      "metrics": {
+        "layoutShiftScore": 0,
+        "horizontalOverflow": false,
+        "elementsAudited": 47,
+        "renderTimeMs": 15
+      }
+    },
+    {
+      "key": "sign_in_portal_mobile_standard",
+      "route": "/login",
+      "routeName": "Sign In Portal",
+      "viewport": {
+        "name": "Mobile Standard",
+        "width": 375,
+        "height": 812,
+        "type": "mobile"
+      },
+      "capturedAt": "2026-08-26T20:01:23.269Z",
+      "status": "verified_golden",
+      "metrics": {
+        "layoutShiftScore": 0,
+        "horizontalOverflow": false,
+        "elementsAudited": 47,
+        "renderTimeMs": 19
+      }
+    }
+  ]
+}

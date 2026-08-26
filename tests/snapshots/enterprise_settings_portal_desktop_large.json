@@ -1,0 +1,19 @@
+{
+  "key": "enterprise_settings_portal_desktop_large",
+  "route": "/settings",
+  "routeName": "Enterprise Settings Portal",
+  "viewport": {
+    "name": "Desktop Large",
+    "width": 1920,
+    "height": 1080,
+    "type": "desktop"
+  },
+  "capturedAt": "2026-08-26T20:01:23.253Z",
+  "status": "verified_golden",
+  "metrics": {
+    "layoutShiftScore": 0,
+    "horizontalOverflow": false,
+    "elementsAudited": 44,
+    "renderTimeMs": 18
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "key": "registration_wizard_tablet_portrait",
+  "route": "/register",
+  "routeName": "Registration Wizard",
+  "viewport": {
+    "name": "Tablet Portrait",
+    "width": 768,
+    "height": 1024,
+    "type": "tablet"
+  },
+  "capturedAt": "2026-08-26T20:01:23.265Z",
+  "status": "verified_golden",
+  "metrics": {
+    "layoutShiftScore": 0,
+    "horizontalOverflow": false,
+    "elementsAudited": 47,
+    "renderTimeMs": 13
+  }
+}

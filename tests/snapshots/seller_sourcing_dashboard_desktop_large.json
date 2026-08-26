@@ -1,0 +1,19 @@
+{
+  "key": "seller_sourcing_dashboard_desktop_large",
+  "route": "/seller",
+  "routeName": "Seller Sourcing Dashboard",
+  "viewport": {
+    "name": "Desktop Large",
+    "width": 1920,
+    "height": 1080,
+    "type": "desktop"
+  },
+  "capturedAt": "2026-08-26T20:01:23.262Z",
+  "status": "verified_golden",
+  "metrics": {
+    "layoutShiftScore": 0,
+    "horizontalOverflow": false,
+    "elementsAudited": 43,
+    "renderTimeMs": 19
+  }
+}

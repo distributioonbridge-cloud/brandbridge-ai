@@ -1,0 +1,19 @@
+{
+  "key": "brand_protection_suite_tablet_portrait",
+  "route": "/brand",
+  "routeName": "Brand Protection Suite",
+  "viewport": {
+    "name": "Tablet Portrait",
+    "width": 768,
+    "height": 1024,
+    "type": "tablet"
+  },
+  "capturedAt": "2026-08-26T20:01:23.267Z",
+  "status": "verified_golden",
+  "metrics": {
+    "layoutShiftScore": 0,
+    "horizontalOverflow": false,
+    "elementsAudited": 48,
+    "renderTimeMs": 17
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "key": "sign_in_portal_desktop_standard",
+  "route": "/login",
+  "routeName": "Sign In Portal",
+  "viewport": {
+    "name": "Desktop Standard",
+    "width": 1280,
+    "height": 800,
+    "type": "desktop"
+  },
+  "capturedAt": "2026-08-26T20:01:23.265Z",
+  "status": "verified_golden",
+  "metrics": {
+    "layoutShiftScore": 0,
+    "horizontalOverflow": false,
+    "elementsAudited": 44,
+    "renderTimeMs": 15
+  }
+}

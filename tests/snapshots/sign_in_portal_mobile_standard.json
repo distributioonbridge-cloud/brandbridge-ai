@@ -1,0 +1,19 @@
+{
+  "key": "sign_in_portal_mobile_standard",
+  "route": "/login",
+  "routeName": "Sign In Portal",
+  "viewport": {
+    "name": "Mobile Standard",
+    "width": 375,
+    "height": 812,
+    "type": "mobile"
+  },
+  "capturedAt": "2026-08-26T20:01:23.269Z",
+  "status": "verified_golden",
+  "metrics": {
+    "layoutShiftScore": 0,
+    "horizontalOverflow": false,
+    "elementsAudited": 47,
+    "renderTimeMs": 19
+  }
+}

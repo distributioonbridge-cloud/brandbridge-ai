@@ -1,0 +1,19 @@
+{
+  "key": "brand_protection_suite_desktop_standard",
+  "route": "/brand",
+  "routeName": "Brand Protection Suite",
+  "viewport": {
+    "name": "Desktop Standard",
+    "width": 1280,
+    "height": 800,
+    "type": "desktop"
+  },
+  "capturedAt": "2026-08-26T20:01:23.264Z",
+  "status": "verified_golden",
+  "metrics": {
+    "layoutShiftScore": 0,
+    "horizontalOverflow": false,
+    "elementsAudited": 48,
+    "renderTimeMs": 15
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "key": "landing_page_v3_5__desktop_standard",
+  "route": "/",
+  "routeName": "Landing Page (v3.5)",
+  "viewport": {
+    "name": "Desktop Standard",
+    "width": 1280,
+    "height": 800,
+    "type": "desktop"
+  },
+  "capturedAt": "2026-08-26T20:01:23.263Z",
+  "status": "verified_golden",
+  "metrics": {
+    "layoutShiftScore": 0,
+    "horizontalOverflow": false,
+    "elementsAudited": 46,
+    "renderTimeMs": 17
+  }
+}

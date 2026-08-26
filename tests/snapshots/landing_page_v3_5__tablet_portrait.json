@@ -1,0 +1,19 @@
+{
+  "key": "landing_page_v3_5__tablet_portrait",
+  "route": "/",
+  "routeName": "Landing Page (v3.5)",
+  "viewport": {
+    "name": "Tablet Portrait",
+    "width": 768,
+    "height": 1024,
+    "type": "tablet"
+  },
+  "capturedAt": "2026-08-26T20:01:23.265Z",
+  "status": "verified_golden",
+  "metrics": {
+    "layoutShiftScore": 0,
+    "horizontalOverflow": false,
+    "elementsAudited": 46,
+    "renderTimeMs": 12
+  }
+}

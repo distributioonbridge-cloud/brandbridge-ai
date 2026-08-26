@@ -1,0 +1,19 @@
+{
+  "key": "landing_page_v3_5__desktop_large",
+  "route": "/",
+  "routeName": "Landing Page (v3.5)",
+  "viewport": {
+    "name": "Desktop Large",
+    "width": 1920,
+    "height": 1080,
+    "type": "desktop"
+  },
+  "capturedAt": "2026-08-26T20:01:23.251Z",
+  "status": "verified_golden",
+  "metrics": {
+    "layoutShiftScore": 0,
+    "horizontalOverflow": false,
+    "elementsAudited": 42,
+    "renderTimeMs": 16
+  }
+}

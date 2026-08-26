@@ -1,0 +1,19 @@
+{
+  "key": "landing_page_v3_5__mobile_standard",
+  "route": "/",
+  "routeName": "Landing Page (v3.5)",
+  "viewport": {
+    "name": "Mobile Standard",
+    "width": 375,
+    "height": 812,
+    "type": "mobile"
+  },
+  "capturedAt": "2026-08-26T20:01:23.268Z",
+  "status": "verified_golden",
+  "metrics": {
+    "layoutShiftScore": 0,
+    "horizontalOverflow": false,
+    "elementsAudited": 45,
+    "renderTimeMs": 17
+  }
+}

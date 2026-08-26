@@ -1,0 +1,19 @@
+{
+  "key": "seller_sourcing_dashboard_tablet_portrait",
+  "route": "/seller",
+  "routeName": "Seller Sourcing Dashboard",
+  "viewport": {
+    "name": "Tablet Portrait",
+    "width": 768,
+    "height": 1024,
+    "type": "tablet"
+  },
+  "capturedAt": "2026-08-26T20:01:23.266Z",
+  "status": "verified_golden",
+  "metrics": {
+    "layoutShiftScore": 0,
+    "horizontalOverflow": false,
+    "elementsAudited": 48,
+    "renderTimeMs": 15
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "key": "brand_protection_suite_desktop_large",
+  "route": "/brand",
+  "routeName": "Brand Protection Suite",
+  "viewport": {
+    "name": "Desktop Large",
+    "width": 1920,
+    "height": 1080,
+    "type": "desktop"
+  },
+  "capturedAt": "2026-08-26T20:01:23.262Z",
+  "status": "verified_golden",
+  "metrics": {
+    "layoutShiftScore": 0,
+    "horizontalOverflow": false,
+    "elementsAudited": 44,
+    "renderTimeMs": 14
+  }
+}
